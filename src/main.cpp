@@ -22,7 +22,7 @@ int main()
     float titleScale = scale * 3.0f;
     Vector2 titlePosition = {
         (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
-        50.0f * scale};
+        20.0f * scale};
 
     // Create each layer
     Layer background("resource/Sky_pale.png", 0.1f, 0, scale);
