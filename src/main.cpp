@@ -18,7 +18,7 @@ int main()
     SetTargetFPS(60);
 
     // title game
-    Texture2D titleTexture = LoadTexture("resource/MAFIA CITY.png");
+    Texture2D titleTexture = LoadTexture("resource/TitleGame.png");
     float titleScale = scale * 3.0f;
     Vector2 titlePosition = {
         (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
