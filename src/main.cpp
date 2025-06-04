@@ -32,9 +32,9 @@ int main()
     Layer shop("resource/minishop&callbox.png", 1.0f, 80, scale);
     Layer road("resource/road&lamps.png", 1.0f, 75, scale);
 
-    // Create Button - auto-centered and scaled, moved down a bit
-    Button startButton{"resource/button2.png", "resource/button3.png", scale * 5.0f, true, 50.0f};
-    Button exitButton{"resource/button2.png", "resource/button3.png", scale * 5.0f, true, 150.0f};
+    // Create Button
+    Button startButton{"resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f};
+    Button exitButton{"resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f};
 
     while (!WindowShouldClose())
     {
@@ -48,7 +48,7 @@ int main()
 
         // Update both buttons
         startButton.Update();
-        exitButton.Update(); // This was missing!
+        exitButton.Update();
 
         if (startButton.IsClicked())
         {
@@ -57,8 +57,6 @@ int main()
         if (exitButton.IsClicked())
         {
             printf("Exit button clicked!\n");
-            // You might want to close the window here:
-            // break; // or CloseWindow();
         }
 
         BeginDrawing();
