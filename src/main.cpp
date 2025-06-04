@@ -17,6 +17,13 @@ int main()
     InitWindow(screenWidth, screenHeight, "Mafia City");
     SetTargetFPS(60);
 
+    // title game
+    Texture2D titleTexture = LoadTexture("resource/MAFIA CITY.png");
+    float titleScale = scale * 3.0f;
+    Vector2 titlePosition = {
+        (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
+        50.0f * scale};
+
     // Create each layer
     Layer background("resource/Sky_pale.png", 0.1f, 0, scale);
     Layer midground("resource/back.png", 0.5f, 0, scale);
@@ -68,10 +75,13 @@ int main()
         // Draw buttons on top
         startButton.Draw();
         exitButton.Draw();
+        // Draw title
+        DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
 
         EndDrawing();
     }
-
+    // Cleanup
+    UnloadTexture(titleTexture);
     CloseWindow();
     return 0;
 }
