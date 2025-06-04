@@ -26,8 +26,8 @@ int main()
     Layer road("resource/road&lamps.png", 1.0f, 75, scale);
 
     // Create Button - auto-centered and scaled, moved down a bit
-    Button startButton{"resource/button2.png", "resource/button3.png", scale * 5.0f, true, 10.0f};
-    Button exitButton{"resource/button2.png", "resource/button3.png", scale * 5.0f, true, 100.0f};
+    Button startButton{"resource/button2.png", "resource/button3.png", scale * 5.0f, true, 50.0f};
+    Button exitButton{"resource/button2.png", "resource/button3.png", scale * 5.0f, true, 150.0f};
 
     while (!WindowShouldClose())
     {
