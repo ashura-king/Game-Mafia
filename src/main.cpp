@@ -26,8 +26,9 @@ int main()
     Layer road("resource/road&lamps.png", 1.0f, 75, scale);
 
     // Create Button - auto-centered and scaled, moved down a bit
-    Button startButton{"resource/button2.png", scale * 5.0f, true, 10.0f};
-    Button exitButton{"resource/button2.png", scale * 5.0f, true, 140.0f};
+    Button startButton{"resource/button2.png", "resource/button3.png", scale * 5.0f, true, 10.0f};
+    Button exitButton{"resource/button2.png", "resource/button3.png", scale * 5.0f, true, 100.0f};
+
     while (!WindowShouldClose())
     {
         // Update
@@ -37,14 +38,20 @@ int main()
         foreground.Update();
         shop.Update();
         road.Update();
+
+        // Update both buttons
         startButton.Update();
+        exitButton.Update(); // This was missing!
+
         if (startButton.IsClicked())
         {
-            printf("Button clicked!\n");
+            printf("Start button clicked!\n");
         }
         if (exitButton.IsClicked())
         {
-            printf("Exit button clicked\n");
+            printf("Exit button clicked!\n");
+            // You might want to close the window here:
+            // break; // or CloseWindow();
         }
 
         BeginDrawing();
@@ -58,7 +65,7 @@ int main()
         shop.Draw();
         road.Draw();
 
-        // Draw button on top
+        // Draw buttons on top
         startButton.Draw();
         exitButton.Draw();
 
