@@ -26,7 +26,6 @@ int main()
 
     // title game
     Texture2D titleTexture = LoadTexture("resource/TitleGame.png");
-    Texture2D gameBackground = LoadTexture("resource/City3_pale.png");
 
     float titleScale = scale * 3.0f;
     Vector2 titlePosition = {
@@ -40,16 +39,25 @@ int main()
     Layer foreground("resource/houses1.png", 1.0f, 70, scale);
     Layer shop("resource/minishop&callbox.png", 1.0f, 80, scale);
     Layer road("resource/road&lamps.png", 1.0f, 75, scale);
+    Layer sky("resource/sky.png", 0.1f, 0, scale);
+    Layer building("resource/houses3.png", 0.5f, 0, scale);
+    Layer houded("resource/night.png", 1.0f, 70, scale);
+    Layer houdes1("resource/night2.png", 1.0f, 70, scale);
+    Layer crosswalk("resource/crosswalk.png", 1.0f, 70, scale);
 
     // Create Button
     bool running = true;
     Button startButton{"resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f};
     Button exitButton{"resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f};
 
+    int framerCounter = 0;
+    int Dot = 0;
+    int maxDot = 3;
+    std::string animatedText = "Loading Please Wait";
+
     while (!WindowShouldClose() && running)
     {
-        // Update
-
+        // MENU STATE::
         if (currentState == Gamestate::MENU)
         {
             background.Update();
@@ -58,8 +66,7 @@ int main()
             foreground.Update();
             shop.Update();
             road.Update();
-
-            // Update both buttons
+            // Creating Buttons
             startButton.Update();
             exitButton.Update();
 
@@ -72,11 +79,9 @@ int main()
                 printf("Exit button clicked!\n");
                 running = false;
             }
-
+            // Beging draw for Menu state
             BeginDrawing();
             ClearBackground(GetColor(0x052c46ff));
-
-            // Draw layers
             background.Draw();
             midground.Draw();
             houses.Draw();
@@ -84,18 +89,45 @@ int main()
             shop.Draw();
             road.Draw();
 
-            // Draw buttons on top
             startButton.Draw();
             exitButton.Draw();
-            // Draw title
+
             DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
+
+            EndDrawing();
         }
+        // GAMESTATE GAME
         else if (currentState == Gamestate::GAME)
         {
-            DrawTextureEx(gameBackground, {0.0}, 0.0f, scale, WHITE);
-            DrawText("Game is running...", 300, 250, 30, RAYWHITE);
+            // Update game layers
+            sky.Update();
+            building.Update();
+            houded.Update();
+            houdes1.Update();
+            crosswalk.Update();
+
+            // Update animation for dots
+            framerCounter++;
+            if (framerCounter >= 30)
+            {
+                framerCounter = 0;
+                Dot = (Dot + 1) % (maxDot + 1);
+                animatedText = "Game is running" + std::string(Dot, '.');
+            }
+            // Creating Game Loader
+            BeginDrawing();
+            ClearBackground(RAYWHITE);
+
+            sky.Draw();
+            building.Draw();
+            houded.Draw();
+            houdes1.Draw();
+            crosswalk.Draw();
+
+            DrawText(animatedText.c_str(), 300, 250, 30, WHITE);
+
+            EndDrawing();
         }
-        EndDrawing();
     }
     // Cleanup
     UnloadTexture(titleTexture);
