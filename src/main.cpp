@@ -1,6 +1,6 @@
 #include <raylib.h>
-#include "Layer.h"
-#include "Button.h"
+#include "includes/Layer.h"
+#include "includes/Button.h"
 
 int main()
 {
@@ -33,6 +33,7 @@ int main()
     Layer road("resource/road&lamps.png", 1.0f, 75, scale);
 
     // Create Button
+
     Button startButton{"resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f};
     Button exitButton{"resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f};
 

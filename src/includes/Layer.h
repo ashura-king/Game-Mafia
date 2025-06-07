@@ -1,4 +1,5 @@
-#pragma once
+#define LAYER_H
+#ifdef LAYER_H
 #include <iostream>
 #include <raylib.h>
 
@@ -17,4 +18,5 @@ private:
     float speed;
     float yOffset;
     float scale;
-}; // <- Don't forget this semicolon!
+};
+#endif
