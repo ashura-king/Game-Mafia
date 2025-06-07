@@ -2,6 +2,11 @@
 #include "includes/Layer.h"
 #include "includes/Button.h"
 
+enum class Gamestate
+{
+    MENU,
+    GAME
+};
 int main()
 {
     const int screenWidth = 960;
@@ -16,9 +21,13 @@ int main()
 
     InitWindow(screenWidth, screenHeight, "Mafia City");
     SetTargetFPS(60);
+    // Game STATE
+    Gamestate currentState = Gamestate::MENU;
 
     // title game
     Texture2D titleTexture = LoadTexture("resource/TitleGame.png");
+    Texture2D gameBackground = LoadTexture("resource/City3_pale.png");
+
     float titleScale = scale * 3.0f;
     Vector2 titlePosition = {
         (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
@@ -33,50 +42,59 @@ int main()
     Layer road("resource/road&lamps.png", 1.0f, 75, scale);
 
     // Create Button
-
+    bool running = true;
     Button startButton{"resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f};
     Button exitButton{"resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f};
 
-    while (!WindowShouldClose())
+    while (!WindowShouldClose() && running)
     {
         // Update
-        background.Update();
-        midground.Update();
-        houses.Update();
-        foreground.Update();
-        shop.Update();
-        road.Update();
 
-        // Update both buttons
-        startButton.Update();
-        exitButton.Update();
-
-        if (startButton.IsClicked())
+        if (currentState == Gamestate::MENU)
         {
-            printf("Start button clicked!\n");
+            background.Update();
+            midground.Update();
+            houses.Update();
+            foreground.Update();
+            shop.Update();
+            road.Update();
+
+            // Update both buttons
+            startButton.Update();
+            exitButton.Update();
+
+            if (startButton.IsClicked())
+            {
+                currentState = Gamestate::GAME;
+            }
+            if (exitButton.IsClicked())
+            {
+                printf("Exit button clicked!\n");
+                running = false;
+            }
+
+            BeginDrawing();
+            ClearBackground(GetColor(0x052c46ff));
+
+            // Draw layers
+            background.Draw();
+            midground.Draw();
+            houses.Draw();
+            foreground.Draw();
+            shop.Draw();
+            road.Draw();
+
+            // Draw buttons on top
+            startButton.Draw();
+            exitButton.Draw();
+            // Draw title
+            DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
         }
-        if (exitButton.IsClicked())
+        else if (currentState == Gamestate::GAME)
         {
-            printf("Exit button clicked!\n");
+            DrawTextureEx(gameBackground, {0.0}, 0.0f, scale, WHITE);
+            DrawText("Game is running...", 300, 250, 30, RAYWHITE);
         }
-
-        BeginDrawing();
-        ClearBackground(GetColor(0x052c46ff));
-
-        // Draw layers
-        background.Draw();
-        midground.Draw();
-        houses.Draw();
-        foreground.Draw();
-        shop.Draw();
-        road.Draw();
-
-        // Draw buttons on top
-        startButton.Draw();
-        exitButton.Draw();
-        // Draw title
-        DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
-
         EndDrawing();
     }
     // Cleanup
