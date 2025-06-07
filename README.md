@@ -1,29 +1,37 @@
-# Raylib-CPP-Starter-Template-for-VSCODE-V2
-Raylib C++ Starter Template for Visual Studio Code on Windows.
-This demo project contains a bouncing ball raylib example program.
-It works with raylib version 5.0. Tested on both Windows 10 and Windows 11.
+# Mafai-City
 
-# How to use this template
-1. Double click on the main.code-workspace file. This will open the template in VS Code.
-2. From the Explorer Window of VS Code navigate to the src folder and double click on the main.cpp file.
-3. Press F5 on the keyboard to compile and run the program.
+**Mafai-City** is a retro-style classic game built with [Raylib](https://www.raylib.com/), designed to bring nostalgic arcade fun with modern simplicity.
 
-# What's changed
-The template now uses folders for better organizion of the files. So, all the source code now lives in the src folder.
+---
 
-# Video Tutorial
+## About the Game
 
-<p align="center">
-  <img src="preview.jpg" alt="" width="800">
-</p>
+Dive into the vibrant world of Mafai-City, where strategy and quick reflexes determine your fate. Navigate through challenging levels, outsmart your opponents, and experience classic gameplay mechanics enhanced by the power of Raylib’s graphics and audio.
 
-<p align="center">
-🎥 <a href="https://www.youtube.com/watch?v=PaAcVk5jUd8">Video Tutorial on YouTube</a>
-</p>
+---
 
-<br>
-<br>
-<p align="center">
-| 📺 <a href="https://www.youtube.com/channel/UC3ivOTE5EgpmF2DHLBmWIWg">My YouTube Channel</a>
-| 🌍 <a href="http://www.programmingwithnick.com">My Website</a> | <br>
-</p>
+## Features
+
+- Retro pixel-art style visuals
+- Smooth animations and responsive controls
+- Engaging game mechanics inspired by classic arcade games
+- Cross-platform support via Raylib
+- Lightweight and optimized for performance
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- [Raylib](https://www.raylib.com/) installed and set up on your system
+- A C++ compiler supporting C++17 or later (e.g., g++, clang++, MSVC)
+- CMake or a build system of your choice (optional but recommended)
+
+### Building the Game
+
+Clone this repository:
+
+```bash
+git clone https://github.com/ashura-king/Mafai-city.git
+cd Mafai-city
