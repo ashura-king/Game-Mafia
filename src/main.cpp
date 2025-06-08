@@ -2,6 +2,8 @@
 #include "includes/Layer.h"
 #include "includes/Button.h"
 #include "includes/TextOutlined.h"
+#include <vector>
+#include <string>
 
 enum class Gamestate
 {
@@ -10,7 +12,15 @@ enum class Gamestate
     PLAYING
 };
 
-// Outlined Text
+// Helper function to update and draw layers
+void UpdateAndDrawLayers(const std::vector<Layer *> &layers)
+{
+    for (Layer *layer : layers)
+    {
+        layer->Update();
+        layer->Draw();
+    }
+}
 
 int main()
 {
@@ -27,13 +37,14 @@ int main()
     InitAudioDevice();
     Sound clickSound = LoadSound("Audio/Clicked.mp3");
     Music backgroundMusic = LoadMusicStream("Audio/IntroPlay.mp3");
+    Music playingMusic = LoadMusicStream("Audio/Playing.mp3");
 
     InitWindow(screenWidth, screenHeight, "Mafia City");
     SetTargetFPS(60);
 
     Gamestate currentState = Gamestate::MENU;
 
-    // Title texture
+    // Title and game background
     Texture2D titleTexture = LoadTexture("resource/TitleGame.png");
     Texture2D gameTexture = LoadTexture("resource/City4.png");
     float titleScale = scale * 3.0f;
@@ -48,6 +59,7 @@ int main()
     Layer foreground("resource/houses1.png", 1.0f, 70, scale);
     Layer shop("resource/minishop&callbox.png", 1.0f, 80, scale);
     Layer road("resource/road&lamps.png", 1.0f, 75, scale);
+
     Layer sky("resource/sky.png", 0.1f, 0, scale);
     Layer building("resource/houses3.png", 0.5f, 0, scale);
     Layer houded("resource/night2.png", 1.0f, 70, scale);
@@ -55,38 +67,37 @@ int main()
     Layer roads("resource/road.png", 1.0f, 75, scale);
     Layer crosswalk("resource/crosswalk.png", 1.0f, 70, scale);
 
+    std::vector<Layer *> menuLayers = {&background, &midground, &houses, &foreground, &shop, &road};
+    std::vector<Layer *> gameLayers = {&sky, &building, &houded, &houdes1, &roads, &crosswalk};
+
     // Buttons
-    Button startButton{"resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f};
-    Button exitButton{"resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f};
+    Button startButton("resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f);
+    Button exitButton("resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f);
 
-    bool running = true;
-
-    // text animation
+    // Animation
     int frameCounter = 0;
     int dotCount = 0;
-    int maxDots = 3;
+    const int maxDots = 3;
     std::string animatedText = " ";
 
-    // Fade control
+    // Fade
     int gameTimer = 0;
     const int fadeDuration = 300;
     bool fadeOutComplete = false;
+    bool playingMusicStarted = false;
+
     PlayMusicStream(backgroundMusic);
 
+    bool running = true;
     while (!WindowShouldClose() && running)
     {
-
         UpdateMusicStream(backgroundMusic);
-        // MENU
-        if (currentState == Gamestate::MENU)
-        {
-            background.Update();
-            midground.Update();
-            houses.Update();
-            foreground.Update();
-            shop.Update();
-            road.Update();
 
+        switch (currentState)
+        {
+        case Gamestate::MENU:
+            for (Layer *layer : menuLayers)
+                layer->Update();
             startButton.Update();
             exitButton.Update();
 
@@ -106,28 +117,17 @@ int main()
 
             BeginDrawing();
             ClearBackground(GetColor(0x052c46ff));
-            background.Draw();
-            midground.Draw();
-            houses.Draw();
-            foreground.Draw();
-            shop.Draw();
-            road.Draw();
-
+            for (Layer *layer : menuLayers)
+                layer->Draw();
             startButton.Draw();
             exitButton.Draw();
             DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
             EndDrawing();
-        }
+            break;
 
-        // LOADING
-        else if (currentState == Gamestate::GAME)
-        {
-            sky.Update();
-            building.Update();
-            houded.Update();
-            houdes1.Update();
-            roads.Update();
-            crosswalk.Update();
+        case Gamestate::GAME:
+            for (Layer *layer : gameLayers)
+                layer->Update();
 
             frameCounter++;
             if (frameCounter >= 30)
@@ -141,9 +141,8 @@ int main()
             {
                 gameTimer++;
                 float volume = 1.0f - (float)gameTimer / fadeDuration;
-                if (volume < 0.0f)
-                    volume = 0.0f;
-                SetMusicVolume(backgroundMusic, volume);
+                SetMusicVolume(backgroundMusic, volume < 0 ? 0 : volume);
+
                 if (gameTimer >= fadeDuration)
                 {
                     fadeOutComplete = true;
@@ -153,13 +152,8 @@ int main()
 
             BeginDrawing();
             ClearBackground(RAYWHITE);
-            sky.Draw();
-            building.Draw();
-            houded.Draw();
-            houdes1.Draw();
-            roads.Draw();
-            crosswalk.Draw();
-
+            for (Layer *layer : gameLayers)
+                layer->Draw();
             DrawTextOutlined(animatedText.c_str(), 350, 270, 40, WHITE, BLACK);
 
             if (!fadeOutComplete)
@@ -168,20 +162,31 @@ int main()
                 DrawRectangle(0, 0, screenWidth, screenHeight, Fade(BLACK, alpha));
             }
             EndDrawing();
-        }
+            break;
 
-        // MAIN GAMEPLAY
-        else if (currentState == Gamestate::PLAYING)
-        {
+        case Gamestate::PLAYING:
+            if (!playingMusicStarted)
+            {
+                StopMusicStream(backgroundMusic);
+                PlayMusicStream(playingMusic);
+                SetMusicVolume(playingMusic, 1.0f);
+                playingMusicStarted = true;
+            }
+            UpdateMusicStream(playingMusic);
 
             BeginDrawing();
-            ClearBackground(BLACK);
+            ClearBackground(WHITE);
             DrawTextureEx(gameTexture, {0, 0}, 0.0f, scale, WHITE);
             EndDrawing();
+            break;
         }
     }
+    // Clean up
+    UnloadSound(clickSound);
     UnloadMusicStream(backgroundMusic);
     UnloadTexture(titleTexture);
+    UnloadTexture(gameTexture);
     CloseWindow();
+
     return 0;
 }
