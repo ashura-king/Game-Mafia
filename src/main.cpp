@@ -1,23 +1,16 @@
 #include <raylib.h>
 #include "includes/Layer.h"
 #include "includes/Button.h"
+#include "includes/TextOutlined.h"
 
 enum class Gamestate
 {
     MENU,
-    GAME,   // Loading + Fade
-    PLAYING // Actual game logic
+    GAME,
+    PLAYING
 };
 
 // Outlined Text
-void DrawTextOutlined(const char *text, int posX, int posY, int fontSize, Color textColor, Color outlineColor)
-{
-    DrawText(text, posX - 1, posY - 1, fontSize, outlineColor);
-    DrawText(text, posX + 1, posY - 1, fontSize, outlineColor);
-    DrawText(text, posX - 1, posY + 1, fontSize, outlineColor);
-    DrawText(text, posX + 1, posY + 1, fontSize, outlineColor);
-    DrawText(text, posX, posY, fontSize, textColor);
-}
 
 int main()
 {
@@ -31,6 +24,10 @@ int main()
     float scaleY = (float)screenHeight / originalHeight;
     float scale = (scaleX < scaleY) ? scaleX : scaleY;
 
+    InitAudioDevice();
+    Sound clickSound = LoadSound("Audio/Clicked.mp3");
+    Music backgroundMusic = LoadMusicStream("Audio/IntroPlay.mp3");
+
     InitWindow(screenWidth, screenHeight, "Mafia City");
     SetTargetFPS(60);
 
@@ -38,6 +35,7 @@ int main()
 
     // Title texture
     Texture2D titleTexture = LoadTexture("resource/TitleGame.png");
+    Texture2D gameTexture = LoadTexture("resource/City4.png");
     float titleScale = scale * 3.0f;
     Vector2 titlePosition = {
         (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
@@ -63,7 +61,7 @@ int main()
 
     bool running = true;
 
-    // For "Please wait..." text animation
+    // text animation
     int frameCounter = 0;
     int dotCount = 0;
     int maxDots = 3;
@@ -71,12 +69,15 @@ int main()
 
     // Fade control
     int gameTimer = 0;
-    const int fadeDuration = 300; // 5 seconds at 60 FPS
+    const int fadeDuration = 300;
     bool fadeOutComplete = false;
+    PlayMusicStream(backgroundMusic);
 
     while (!WindowShouldClose() && running)
     {
-        // ========== MENU ==========
+
+        UpdateMusicStream(backgroundMusic);
+        // MENU
         if (currentState == Gamestate::MENU)
         {
             background.Update();
@@ -91,6 +92,7 @@ int main()
 
             if (startButton.IsClicked())
             {
+                PlaySound(clickSound);
                 currentState = Gamestate::GAME;
                 gameTimer = 0;
                 fadeOutComplete = false;
@@ -98,6 +100,7 @@ int main()
 
             if (exitButton.IsClicked())
             {
+                PlaySound(clickSound);
                 running = false;
             }
 
@@ -116,7 +119,7 @@ int main()
             EndDrawing();
         }
 
-        // ========== LOADING WITH FADE ==========
+        // LOADING
         else if (currentState == Gamestate::GAME)
         {
             sky.Update();
@@ -137,6 +140,10 @@ int main()
             if (!fadeOutComplete)
             {
                 gameTimer++;
+                float volume = 1.0f - (float)gameTimer / fadeDuration;
+                if (volume < 0.0f)
+                    volume = 0.0f;
+                SetMusicVolume(backgroundMusic, volume);
                 if (gameTimer >= fadeDuration)
                 {
                     fadeOutComplete = true;
@@ -163,17 +170,17 @@ int main()
             EndDrawing();
         }
 
-        // ========== MAIN GAMEPLAY ==========
+        // MAIN GAMEPLAY
         else if (currentState == Gamestate::PLAYING)
         {
-            // TODO: Replace with your actual game logic
+
             BeginDrawing();
             ClearBackground(BLACK);
-            DrawText("Game Started!", 350, 250, 30, GREEN);
+            DrawTextureEx(gameTexture, {0, 0}, 0.0f, scale, WHITE);
             EndDrawing();
         }
     }
-
+    UnloadMusicStream(backgroundMusic);
     UnloadTexture(titleTexture);
     CloseWindow();
     return 0;
