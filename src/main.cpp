@@ -36,8 +36,8 @@ int main()
 
     InitAudioDevice();
     Sound clickSound = LoadSound("Audio/Clicked.mp3");
-    Music backgroundMusic = LoadMusicStream("Audio/IntroPlay.mp3");
-    Music playingMusic = LoadMusicStream("Audio/Playing.mp3");
+    Music backgroundMusic = LoadMusicStream("Audio/IntroSound.mp3");
+    Music playingMusic = LoadMusicStream("Audio/PlayingSound.mp3");
 
     InitWindow(screenWidth, screenHeight, "Mafia City");
     SetTargetFPS(60);
