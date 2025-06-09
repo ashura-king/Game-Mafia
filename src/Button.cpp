@@ -1,4 +1,4 @@
-#include "includes/Button.h"
+#include "includes/Button.hpp"
 
 Button::Button(const char *normalFile, const char *hoverFile, const char *clickFile,
                float scale, bool centered, float yOffset)

@@ -1,4 +1,4 @@
-#include "includes/TextOutlined.h"
+#include "includes/TextOutlined.hpp"
 
 void DrawTextOutlined(const char *text, int posX, int posY, int fontSize, Color textColor, Color outlineColor)
 {

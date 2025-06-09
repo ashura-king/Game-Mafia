@@ -1,4 +1,4 @@
-#include "includes/Layer.h"
+#include "includes/Layer.hpp"
 
 Layer::Layer(const char *file, float spd, float y, float scl)
     : scrollX(0), speed(spd), yOffset(y), scale(scl)

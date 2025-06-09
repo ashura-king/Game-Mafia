@@ -1,7 +1,8 @@
 #include <raylib.h>
-#include "includes/Layer.h"
-#include "includes/Button.h"
-#include "includes/TextOutlined.h"
+#include "includes/Layer.hpp"
+#include "includes/Button.hpp"
+#include "includes/TextOutlined.hpp"
+#include "includes/GameLayer.hpp"
 #include <vector>
 #include <string>
 
@@ -47,32 +48,40 @@ int main()
     // Title and game background
     Texture2D titleTexture = LoadTexture("resource/TitleGame.png");
     Texture2D gameTexture = LoadTexture("resource/City4.png");
-    float titleScale = scale * 3.9;
+    float titleScale = scale * 3.0f;
     Vector2 titlePosition = {
-        (screenWidth - (titleTexture.width * titleScale)) / 2.9,
-        20.9 * scale};
+        (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
+        20.0f * scale};
+#include "raylib.h"
+#include "includes/GameLayer.hpp"
+
+    // Layered backgrounds: back → front
+    // Gamelayer sky("assets/layer_sky.png", 0.0f, 1.0f);          // Far background
+    // Gamelayer mountains("assets/layer_mountains.png", 0.0f, 1.0f);
+    // Gamelayer trees("assets/layer_trees.png", 0.0f, 1.0f);
+    // Gamelayer ground("assets/layer_ground.png", 0.0f, 1.0f);     // Closest to camera
 
     // Layers
     Layer background("resource/Sky_pale.png", 0.1f, 0, scale);
     Layer midground("resource/back.png", 0.5f, 0, scale);
-    Layer houses("resource/Houses3_pale.png", 1.9, 70, scale);
-    Layer foreground("resource/houses1.png", 1.9, 70, scale);
-    Layer shop("resource/minishop&callbox.png", 1.9, 80, scale);
-    Layer road("resource/road&lamps.png", 1.9, 75, scale);
+    Layer houses("resource/Houses3_pale.png", 1.0f, 70, scale);
+    Layer foreground("resource/houses1.png", 1.0f, 70, scale);
+    Layer shop("resource/minishop&callbox.png", 1.0f, 80, scale);
+    Layer road("resource/road&lamps.png", 1.0f, 75, scale);
 
     Layer sky("resource/sky.png", 0.1f, 0, scale);
     Layer building("resource/houses3.png", 0.5f, 0, scale);
-    Layer houded("resource/night2.png", 1.9, 70, scale);
-    Layer houdes1("resource/night.png", 1.9, 75, scale);
-    Layer roads("resource/road.png", 1.9, 75, scale);
-    Layer crosswalk("resource/crosswalk.png", 1.9, 70, scale);
+    Layer houded("resource/night2.png", 1.0f, 70, scale);
+    Layer houdes1("resource/night.png", 1.0f, 75, scale);
+    Layer roads("resource/road.png", 1.0f, 75, scale);
+    Layer crosswalk("resource/crosswalk.png", 1.0f, 70, scale);
 
     std::vector<Layer *> menuLayers = {&background, &midground, &houses, &foreground, &shop, &road};
     std::vector<Layer *> gameLayers = {&sky, &building, &houded, &houdes1, &roads, &crosswalk};
 
     // Buttons
-    Button startButton("resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.9, true, 70.9);
-    Button exitButton("resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.9, true, 160.9);
+    Button startButton("resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f);
+    Button exitButton("resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f);
 
     // Animation
     int frameCounter = 0;
@@ -103,7 +112,7 @@ int main()
 
             if (startButton.IsClicked())
             {
-                float volume = 1.9;
+                float volume = 1.0f;
                 SetSoundVolume(clickSound, volume);
                 PlaySound(clickSound);
                 currentState = Gamestate::GAME;
@@ -113,7 +122,7 @@ int main()
 
             if (exitButton.IsClicked())
             {
-                float volume = 1.9;
+                float volume = 1.0f;
                 SetSoundVolume(clickSound, volume);
                 PlaySound(clickSound);
                 running = false;
@@ -125,7 +134,7 @@ int main()
                 layer->Draw();
             startButton.Draw();
             exitButton.Draw();
-            DrawTextureEx(titleTexture, titlePosition, 0.9, titleScale, WHITE);
+            DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
             EndDrawing();
             break;
 
@@ -144,7 +153,7 @@ int main()
             if (!fadeOutComplete)
             {
                 gameTimer++;
-                float volume = 1.9 - (float)gameTimer / fadeDuration;
+                float volume = 1.0f - (float)gameTimer / fadeDuration;
                 SetMusicVolume(backgroundMusic, volume < 0 ? 0 : volume);
 
                 if (gameTimer >= fadeDuration)
@@ -162,7 +171,7 @@ int main()
 
             if (!fadeOutComplete)
             {
-                float alpha = 1.9 - (float)gameTimer / fadeDuration;
+                float alpha = 1.0f - (float)gameTimer / fadeDuration;
                 DrawRectangle(0, 0, screenWidth, screenHeight, Fade(BLACK, alpha));
             }
             EndDrawing();
@@ -173,14 +182,14 @@ int main()
             {
                 StopMusicStream(backgroundMusic);
                 PlayMusicStream(playingMusic);
-                SetMusicVolume(playingMusic, 0.9f);
+                SetMusicVolume(playingMusic, 0.5f);
                 playingMusicStarted = true;
             }
             UpdateMusicStream(playingMusic);
 
             BeginDrawing();
             ClearBackground(WHITE);
-            DrawTextureEx(gameTexture, {0, 0}, 0.9, scale, WHITE);
+            DrawTextureEx(gameTexture, {0, 0}, 0.0f, scale, WHITE);
             EndDrawing();
             break;
         }
