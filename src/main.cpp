@@ -186,6 +186,7 @@ int main()
         }
     }
     // Clean up
+    UnloadMusicStream(playingMusic);
     UnloadSound(clickSound);
     UnloadMusicStream(backgroundMusic);
     UnloadTexture(titleTexture);
