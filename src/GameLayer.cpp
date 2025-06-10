@@ -13,10 +13,10 @@ Gamelayer::~Gamelayer()
 
 void Gamelayer::UpdateLayer(float playerSpeed)
 {
-  // Adjust scrollX based on player movement
-  scrollX -= playerSpeed * 0.5f; // 0.5f = parallax factor (slower than player)
+  // Parallax effect
+  scrollX -= playerSpeed * 0.5f; // Parallax factor
 
-  // Optional: wrap scrollX for seamless repeat
+  // Wrap for seamless repeat
   float width = texture.width * scale;
   if (scrollX <= -width)
     scrollX += width;
@@ -28,13 +28,13 @@ void Gamelayer::Drawlayer()
 {
   float width = texture.width * scale;
 
-  // Draw texture twice to ensure seamless loop
+  // Draw repeated textures across screen width
   for (float x = scrollX; x < GetScreenWidth(); x += width)
   {
     DrawTextureEx(texture, {x, yOffset}, 0.0f, scale, WHITE);
   }
 
-  // Draw 1 more before scrollX if needed
+  // Draw one more before scrollX to prevent visual gap
   if (scrollX > 0)
   {
     DrawTextureEx(texture, {scrollX - width, yOffset}, 0.0f, scale, WHITE);

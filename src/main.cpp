@@ -13,7 +13,6 @@ enum class Gamestate
     PLAYING
 };
 
-// Helper function to update and draw layers
 void UpdateAndDrawLayers(const std::vector<Layer *> &layers)
 {
     for (Layer *layer : layers)
@@ -27,7 +26,6 @@ int main()
 {
     const int screenWidth = 960;
     const int screenHeight = 540;
-
     const int originalWidth = 1920;
     const int originalHeight = 1080;
 
@@ -35,61 +33,60 @@ int main()
     float scaleY = (float)screenHeight / originalHeight;
     float scale = (scaleX < scaleY) ? scaleX : scaleY;
 
+    InitWindow(screenWidth, screenHeight, "Mafia City");
+    SetTargetFPS(60);
     InitAudioDevice();
+
+    // Load sounds and music
     Sound clickSound = LoadSound("Audio/Clicked.mp3");
     Music backgroundMusic = LoadMusicStream("Audio/IntroSound.mp3");
     Music playingMusic = LoadMusicStream("Audio/PlayingSound.mp3");
 
-    InitWindow(screenWidth, screenHeight, "Mafia City");
-    SetTargetFPS(60);
-
     Gamestate currentState = Gamestate::MENU;
 
-    // Title and game background
+    // Title texture and scaling
     Texture2D titleTexture = LoadTexture("resource/TitleGame.png");
-    Texture2D gameTexture = LoadTexture("resource/City4.png");
     float titleScale = scale * 3.0f;
     Vector2 titlePosition = {
         (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
         20.0f * scale};
-#include "raylib.h"
-#include "includes/GameLayer.hpp"
 
-    // Layered backgrounds: back → front
-    // Gamelayer sky("assets/layer_sky.png", 0.0f, 1.0f);          // Far background
-    // Gamelayer mountains("assets/layer_mountains.png", 0.0f, 1.0f);
-    // Gamelayer trees("assets/layer_trees.png", 0.0f, 1.0f);
-    // Gamelayer ground("assets/layer_ground.png", 0.0f, 1.0f);     // Closest to camera
+    // Gamelayers for Main game
+    Gamelayer mainsky("resource/mainsky.png", 0.0f, scale);
+    Gamelayer backhouse("resource/housemain2.png", 0.0f, scale);
+    Gamelayer middlehouse("resource/housemain.png", 0.0f, scale);
+    Gamelayer fronthouse("resource/housemain1.png", 0.0f, scale);
+    Gamelayer fountain("resource/fountain&bush.png", 0.0f, scale);
+    Gamelayer policebox("resource/policebox.png", 0.0f, scale);
+    Gamelayer mainroad("resource/mainroad.png", 0.0f, scale);
+    std::vector<Gamelayer *> mainlayers = {&mainsky, &backhouse, &middlehouse, &fronthouse, &fountain, &policebox, &mainroad};
 
-    // Layers
+    // Menu Layers
     Layer background("resource/Sky_pale.png", 0.1f, 0, scale);
     Layer midground("resource/back.png", 0.5f, 0, scale);
     Layer houses("resource/Houses3_pale.png", 1.0f, 70, scale);
     Layer foreground("resource/houses1.png", 1.0f, 70, scale);
     Layer shop("resource/minishop&callbox.png", 1.0f, 80, scale);
     Layer road("resource/road&lamps.png", 1.0f, 75, scale);
+    std::vector<Layer *> menuLayers = {&background, &midground, &houses, &foreground, &shop, &road};
 
+    // Game Layers (for LoadinfScreen)
     Layer sky("resource/sky.png", 0.1f, 0, scale);
     Layer building("resource/houses3.png", 0.5f, 0, scale);
     Layer houded("resource/night2.png", 1.0f, 70, scale);
     Layer houdes1("resource/night.png", 1.0f, 75, scale);
     Layer roads("resource/road.png", 1.0f, 75, scale);
     Layer crosswalk("resource/crosswalk.png", 1.0f, 70, scale);
-
-    std::vector<Layer *> menuLayers = {&background, &midground, &houses, &foreground, &shop, &road};
     std::vector<Layer *> gameLayers = {&sky, &building, &houded, &houdes1, &roads, &crosswalk};
 
     // Buttons
     Button startButton("resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f);
     Button exitButton("resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f);
 
-    // Animation
     int frameCounter = 0;
     int dotCount = 0;
     const int maxDots = 3;
     std::string animatedText = " ";
-
-    // Fade
     int gameTimer = 0;
     const int fadeDuration = 300;
     bool fadeOutComplete = false;
@@ -100,20 +97,16 @@ int main()
     bool running = true;
     while (!WindowShouldClose() && running)
     {
-        UpdateMusicStream(backgroundMusic);
-
         switch (currentState)
         {
         case Gamestate::MENU:
-            for (Layer *layer : menuLayers)
-                layer->Update();
+            UpdateMusicStream(backgroundMusic);
+            UpdateAndDrawLayers(menuLayers);
             startButton.Update();
             exitButton.Update();
 
             if (startButton.IsClicked())
             {
-                float volume = 1.0f;
-                SetSoundVolume(clickSound, volume);
                 PlaySound(clickSound);
                 currentState = Gamestate::GAME;
                 gameTimer = 0;
@@ -122,8 +115,6 @@ int main()
 
             if (exitButton.IsClicked())
             {
-                float volume = 1.0f;
-                SetSoundVolume(clickSound, volume);
                 PlaySound(clickSound);
                 running = false;
             }
@@ -174,10 +165,23 @@ int main()
                 float alpha = 1.0f - (float)gameTimer / fadeDuration;
                 DrawRectangle(0, 0, screenWidth, screenHeight, Fade(BLACK, alpha));
             }
+
             EndDrawing();
             break;
 
         case Gamestate::PLAYING:
+        {
+            float playerSpeed = 0.0f;
+
+            // Detect player input
+            if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
+                playerSpeed = 2.0f; // Move right
+            else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
+                playerSpeed = -2.0f; // Move left
+
+            for (Gamelayer *main : mainlayers)
+                main->UpdateLayer(playerSpeed);
+
             if (!playingMusicStarted)
             {
                 StopMusicStream(backgroundMusic);
@@ -185,21 +189,28 @@ int main()
                 SetMusicVolume(playingMusic, 0.5f);
                 playingMusicStarted = true;
             }
+
             UpdateMusicStream(playingMusic);
 
+            // Drawing
             BeginDrawing();
             ClearBackground(WHITE);
-            DrawTextureEx(gameTexture, {0, 0}, 0.0f, scale, WHITE);
+            for (Gamelayer *main : mainlayers)
+                main->Drawlayer();
+
+            // Optionally draw UI or character here
+
             EndDrawing();
             break;
         }
+        }
     }
-    // Clean up
+
+    // Cleanup
     UnloadMusicStream(playingMusic);
-    UnloadSound(clickSound);
     UnloadMusicStream(backgroundMusic);
+    UnloadSound(clickSound);
     UnloadTexture(titleTexture);
-    UnloadTexture(gameTexture);
     CloseWindow();
 
     return 0;
