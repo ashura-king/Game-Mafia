@@ -3,91 +3,10 @@
 #include "includes/Button.hpp"
 #include "includes/TextOutlined.hpp"
 #include "includes/GameLayer.hpp"
+#include "includes/GameType.hpp"
+#include "includes/Character.hpp"
 #include <vector>
 #include <string>
-
-enum class Gamestate
-{
-    MENU,
-    GAME,
-    PLAYING
-};
-
-enum class AnimationType
-{
-    REPEATING,
-    ONESHOT
-};
-
-enum Direction
-{
-    Left = -1,
-    Right = 1
-};
-
-struct Animation
-{
-    int first;
-    int last;
-    int curr;
-    float speed;
-    float duration_left;
-    int step;
-    AnimationType type;
-};
-
-void Animation_Update(Animation *self)
-{
-    float deltaTime = GetFrameTime();
-    self->duration_left -= deltaTime;
-
-    if (self->duration_left <= 0.0f)
-    {
-        self->duration_left = self->speed;
-        self->curr += self->step;
-
-        if (self->curr > self->last)
-        {
-            switch (self->type)
-            {
-            case AnimationType::REPEATING:
-                self->curr = self->first;
-                break;
-            case AnimationType::ONESHOT:
-                self->curr = self->last;
-                break;
-            }
-        }
-        else if (self->curr < self->first)
-        {
-            switch (self->type)
-            {
-            case AnimationType::REPEATING:
-                self->curr = self->last;
-                break;
-            case AnimationType::ONESHOT:
-                self->curr = self->first;
-                break;
-            }
-        }
-    }
-}
-
-Rectangle animation_frame(Animation *self, int frame_width, int frame_height)
-{
-    int x = self->curr * frame_width;
-    int y = 0;
-    return Rectangle{(float)x, (float)y, (float)frame_width, (float)frame_height};
-}
-
-void UpdateAndDrawLayers(const std::vector<Layer *> &layers)
-{
-    for (Layer *layer : layers)
-    {
-        layer->Update();
-        layer->Draw();
-    }
-}
 
 int main()
 {
@@ -117,24 +36,18 @@ int main()
         (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
         20.0f * scale};
 
-    Texture2D player_idle = LoadTexture("resource/Idle.png");
-    if (player_idle.id == 0)
-    {
-        TraceLog(LOG_ERROR, "Failed to load resource/Idle.png");
-    }
+    // Create characters
+    Character player("resource/Idle.png", "resource/Idle_2.png", "resource/Walk.png", "resource/Shot.png", "resource/Jump.png", 120.0f, 270.0f, 2.0f);
+    player.SetJumpSpeed(15.0f);
+    player.SetGravity(0.8f);
+    player.SetGroundY(270.0f);
+    player.SetFireCooldown(0.3f);
+    // Example of creating multiple characters
+    std::vector<Character *> npcs;
 
-    Texture2D player_idle_left = LoadTexture("resource/Idle_2.png");
-    if (player_idle_left.id == 0)
-    {
-        TraceLog(LOG_ERROR, "Failed to load resource/Idle_2.png");
-    }
+    // npcs.push_back(new Character("resource/npc_idle.png", "resource/npc_idle_left.png", "resource/npc_walk.png", 300.0f, 270.0f, 1.0f));
 
-    Texture2D player_walk = LoadTexture("resource/Walk.png");
-    if (player_walk.id == 0)
-    {
-        TraceLog(LOG_ERROR, "Failed to load resource/Walk.png");
-    }
-
+    // Game layers setup
     Gamelayer mainsky("resource/mainsky.png", 0.0f, scale);
     Gamelayer backhouse("resource/housemain2.png", 0.0f, scale);
     Gamelayer middlehouse("resource/housemain.png", 0.0f, scale);
@@ -173,45 +86,7 @@ int main()
     bool playingMusicStarted = false;
     bool running = true;
 
-    float playerX = 120.0f;
-    Direction player_direction = Right;
-    bool isWalking = false;
-
-    // Character dimensions
-    const float playerWidth = 128 * 2;
-    const float playerHeight = 128 * 2;
-
     PlayMusicStream(backgroundMusic);
-
-    // Idle animation for right direction
-    Animation idleRightAnim = {
-        .first = 0,
-        .last = 4,
-        .curr = 0,
-        .speed = 0.15f,
-        .duration_left = 0.15f,
-        .step = 1,
-        .type = AnimationType::REPEATING};
-
-    // Idle animation for left direction
-    Animation idleLeftAnim = {
-        .first = 0,
-        .last = 4,
-        .curr = 0,
-        .speed = 0.15f,
-        .duration_left = 0.15f,
-        .step = 1,
-        .type = AnimationType::REPEATING};
-
-    // Walking animation
-    Animation walkAnim = {
-        .first = 0,
-        .last = 5,
-        .curr = 0,
-        .speed = 0.08f,
-        .duration_left = 0.08f,
-        .step = 1,
-        .type = AnimationType::REPEATING};
 
     while (!WindowShouldClose() && running)
     {
@@ -292,42 +167,47 @@ int main()
 
         case Gamestate::PLAYING:
         {
-            float playerSpeed = 0.0f;
+            // Handle player input and movement
             float moveSpeed = 2.0f;
-            isWalking = false;
+            float backgroundSpeed = 0.0f;
 
+            player.HandleInput();
+
+            // Calculate background scrolling based on player position
+            float newPlayerX = player.GetX();
             if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
             {
-                playerSpeed = moveSpeed;
-                player_direction = Right;
-                isWalking = true;
+                backgroundSpeed = moveSpeed;
+                if (newPlayerX > screenWidth - player.GetWidth())
+                {
+                    player.SetPosition(screenWidth - player.GetWidth(), player.GetY());
+                }
             }
             else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
             {
-                playerSpeed = -moveSpeed;
-                player_direction = Left;
-                isWalking = true;
+                backgroundSpeed = -moveSpeed;
+                if (newPlayerX < 0)
+                {
+                    player.SetPosition(0, player.GetY());
+                    backgroundSpeed = 0;
+                }
             }
 
-            float newPlayerX = playerX + playerSpeed;
-            float backgroundSpeed = playerSpeed;
+            // Update player
+            player.Update();
 
-            if (newPlayerX < 0)
+            // Update NPCs
+            for (Character *npc : npcs)
             {
-                newPlayerX = 0;
-                backgroundSpeed = 0;
-            }
-            else if (newPlayerX > screenWidth - playerWidth)
-            {
-
-                newPlayerX = screenWidth - playerWidth;
+                npc->Update();
+                // You can add AI logic here for NPCs
             }
 
-            playerX = newPlayerX;
-
+            // Update background layers
             for (Gamelayer *main : mainlayers)
                 main->UpdateLayer(backgroundSpeed);
 
+            // Music handling
             if (!playingMusicStarted)
             {
                 StopMusicStream(backgroundMusic);
@@ -338,60 +218,22 @@ int main()
 
             UpdateMusicStream(playingMusic);
 
-            if (isWalking)
-            {
-                Animation_Update(&walkAnim);
-            }
-            else
-            {
-
-                if (player_direction == Right)
-                {
-                    Animation_Update(&idleRightAnim);
-                }
-                else
-                {
-                    Animation_Update(&idleLeftAnim);
-                }
-            }
-
+            // Rendering
             BeginDrawing();
             ClearBackground(WHITE);
+
+            // Draw background layers
             for (Gamelayer *main : mainlayers)
                 main->Drawlayer();
 
-            Texture2D currentTexture;
-            Rectangle source;
+            // Draw characters
+            player.Draw();
 
-            if (isWalking)
+            // Draw NPCs
+            for (Character *npc : npcs)
             {
-                currentTexture = player_walk;
-                source = animation_frame(&walkAnim, 128, 128);
-
-                if (player_direction == Left)
-                {
-                    source.width = -source.width;
-                }
+                npc->Draw();
             }
-            else
-            {
-
-                if (player_direction == Right)
-                {
-                    currentTexture = player_idle;
-                    source = animation_frame(&idleRightAnim, 128, 128);
-                }
-                else
-                {
-                    currentTexture = player_idle_left;
-                    source = animation_frame(&idleLeftAnim, 128, 128);
-                }
-            }
-
-            Rectangle dest = {playerX, 270, playerWidth, playerHeight};
-            Vector2 origin = {0, 0};
-
-            DrawTexturePro(currentTexture, source, dest, origin, 0.0f, WHITE);
 
             EndDrawing();
             break;
@@ -399,13 +241,16 @@ int main()
         }
     }
 
+    // Cleanup
+    for (Character *npc : npcs)
+    {
+        delete npc;
+    }
+
     UnloadMusicStream(playingMusic);
     UnloadMusicStream(backgroundMusic);
     UnloadSound(clickSound);
     UnloadTexture(titleTexture);
-    UnloadTexture(player_idle);
-    UnloadTexture(player_idle_left);
-    UnloadTexture(player_walk);
     CloseWindow();
 
     return 0;
