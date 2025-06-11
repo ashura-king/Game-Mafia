@@ -1,11 +1,13 @@
 #include "includes/Character.hpp"
 #include <raylib.h>
+#include <algorithm>
 
 Character::Character(const std::string &idlePath,
                      const std::string &idleLeftPath,
                      const std::string &walkPath,
                      const std::string &shot,
                      const std::string &jump,
+                     const std::string &gunshotSoundPath,
                      float startX,
                      float startY,
                      float characterSpeed)
@@ -22,36 +24,40 @@ Character::Character(const std::string &idlePath,
       jumpSpeed(15.0f),
       fireTimer(0.0f),
       fireCooldown(0.3f),
-      isLoaded(true)
+      isLoaded(true),
+      soundLoaded(false)
 {
   groundY = startY;
 
+  // Load textures
   idleTexture = LoadTexture(idlePath.c_str());
   idleLeftTexture = LoadTexture(idleLeftPath.c_str());
   walkTexture = LoadTexture(walkPath.c_str());
 
+  // Check if basic textures loaded successfully
   if (idleTexture.id == 0)
   {
-    TraceLog(LOG_ERROR, "Failed to load texture: %s", idlePath.c_str());
+    TraceLog(LOG_ERROR, "Failed to load idle texture: %s", idlePath.c_str());
     isLoaded = false;
   }
   if (idleLeftTexture.id == 0)
   {
-    TraceLog(LOG_ERROR, "Failed to load texture: %s", idleLeftPath.c_str());
+    TraceLog(LOG_ERROR, "Failed to load idle left texture: %s", idleLeftPath.c_str());
     isLoaded = false;
   }
   if (walkTexture.id == 0)
   {
-    TraceLog(LOG_ERROR, "Jump texture failed to load: %s", jump.c_str());
+    TraceLog(LOG_ERROR, "Failed to load walk texture: %s", walkPath.c_str());
     isLoaded = false;
   }
 
+  // Load optional shot texture
   if (!shot.empty())
   {
     shotTexture = LoadTexture(shot.c_str());
     if (shotTexture.id == 0)
     {
-      TraceLog(LOG_ERROR, "Failed to load texture: %s", shot.c_str());
+      TraceLog(LOG_ERROR, "Failed to load shot texture: %s", shot.c_str());
     }
   }
   else
@@ -59,12 +65,13 @@ Character::Character(const std::string &idlePath,
     shotTexture = {0};
   }
 
+  // Load optional jump texture
   if (!jump.empty())
   {
     jumpTexture = LoadTexture(jump.c_str());
     if (jumpTexture.id == 0)
     {
-      TraceLog(LOG_ERROR, "Failed to load texture: %s", jump.c_str());
+      TraceLog(LOG_ERROR, "Failed to load jump texture: %s", jump.c_str());
     }
   }
   else
@@ -72,9 +79,29 @@ Character::Character(const std::string &idlePath,
     jumpTexture = {0};
   }
 
+  // Load optional gunshot sound
+  if (!gunshotSoundPath.empty())
+  {
+    gunshotSound = LoadSound(gunshotSoundPath.c_str());
+
+    // Check if the sound loaded properly by inspecting its internal data
+    if (gunshotSound.stream.buffer != nullptr)
+    {
+      soundLoaded = true;
+      SetSoundVolume(gunshotSound, 0.7f);
+    }
+    else
+    {
+      TraceLog(LOG_ERROR, "Failed to load gunshot sound: %s", gunshotSoundPath.c_str());
+      soundLoaded = false;
+    }
+  }
+
+  // Set character dimensions
   width = 128 * 2;
   height = 128 * 2;
 
+  // Initialize animations
   idleRightAnim = {0, 4, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
   idleLeftAnim = {0, 4, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
   walkAnim = {0, 5, 0, 0.08f, 0.08f, 1, AnimationType::REPEATING};
@@ -84,26 +111,32 @@ Character::Character(const std::string &idlePath,
 
 Character::~Character()
 {
-  if (isLoaded)
+  // Unload textures
+  if (idleTexture.id != 0)
+    UnloadTexture(idleTexture);
+  if (idleLeftTexture.id != 0)
+    UnloadTexture(idleLeftTexture);
+  if (walkTexture.id != 0)
+    UnloadTexture(walkTexture);
+  if (jumpTexture.id != 0)
+    UnloadTexture(jumpTexture);
+  if (shotTexture.id != 0)
+    UnloadTexture(shotTexture);
+
+  // FIXED: Unload sound resource
+  if (soundLoaded)
   {
-    if (idleTexture.id != 0)
-      UnloadTexture(idleTexture);
-    if (idleLeftTexture.id != 0)
-      UnloadTexture(idleLeftTexture);
-    if (walkTexture.id != 0)
-      UnloadTexture(walkTexture);
-    if (jumpTexture.id != 0)
-      UnloadTexture(jumpTexture);
-    if (shotTexture.id != 0)
-      UnloadTexture(shotTexture);
+    UnloadSound(gunshotSound);
   }
 }
 
 void Character::Update()
 {
+  fireTimer -= GetFrameTime();
+  fireTimer = std::max(fireTimer, 0.0f);
   UpdateAnimations();
-  UpdateJumpAnimation(); // Added: update jump physics
-  UpdateShotAnimation(); // Added: update shot timer
+  UpdateJumpAnimation();
+  UpdateShotAnimation();
 }
 
 void Character::HandleInput()
@@ -122,12 +155,13 @@ void Character::HandleInput()
   {
     StopMoving();
   }
+
   if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))
   {
     Jump();
   }
 
-  if (IsKeyDown(KEY_J) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+  if (IsKeyDown(KEY_J) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && fireTimer <= 0.0f)
   {
     Shot();
   }
@@ -199,7 +233,6 @@ void Character::UpdateShotAnimation()
     if (fireTimer <= 0.0f)
     {
       isFiring = false;
-
       shotAnim.curr = shotAnim.first;
       shotAnim.duration_left = shotAnim.speed;
     }
@@ -240,12 +273,44 @@ void Character::Jump()
 
 void Character::Shot()
 {
-  if (!isFiring) // Fixed: changed condition to prevent continuous firing
+  if (!isFiring)
   {
     isFiring = true;
     fireTimer = fireCooldown;
     shotAnim.curr = shotAnim.first;
     shotAnim.duration_left = shotAnim.speed;
+    PlayGunshotSound();
+  }
+}
+
+void Character::PlayGunshotSound()
+{
+  if (soundLoaded)
+  {
+
+    if (IsSoundPlaying(gunshotSound))
+    {
+      StopSound(gunshotSound);
+    }
+    PlaySound(gunshotSound);
+  }
+}
+
+bool Character::IsGunshotPlaying() const
+{
+  if (soundLoaded)
+  {
+    return IsSoundPlaying(gunshotSound);
+  }
+  return false;
+}
+
+// FIXED: Added missing parameter
+void Character::SetGunshotVolume(float volume)
+{
+  if (soundLoaded)
+  {
+    SetSoundVolume(gunshotSound, std::clamp(volume, 0.0f, 1.0f));
   }
 }
 
@@ -273,11 +338,11 @@ void Character::Draw()
 
   Texture2D currentTexture;
   Rectangle source;
-  if (isFiring)
+
+  if (isFiring && shotTexture.id != 0)
   {
     currentTexture = shotTexture;
     source = animation_frame(&shotAnim, 128, 128);
-
     if (direction == Left)
     {
       source.width = -source.width;
@@ -287,8 +352,6 @@ void Character::Draw()
   {
     currentTexture = jumpTexture;
     source = animation_frame(&jumpAnim, 128, 128);
-
-    // Ensure width is valid before flipping
     if (direction == Left)
     {
       source.width = -128;
@@ -298,13 +361,10 @@ void Character::Draw()
       source.width = 128;
     }
   }
-
   else if (isWalking)
   {
     currentTexture = walkTexture;
     source = animation_frame(&walkAnim, 128, 128);
-
-    // Flip sprite for left direction
     if (direction == Left)
     {
       source.width = -source.width;

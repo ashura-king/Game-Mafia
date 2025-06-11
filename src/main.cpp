@@ -37,11 +37,12 @@ int main()
         20.0f * scale};
 
     // Create characters
-    Character player("resource/Idle.png", "resource/Idle_2.png", "resource/Walk.png", "resource/Shot.png", "resource/Jump.png", 120.0f, 270.0f, 2.0f);
+    Character player("resource/Idle.png", "resource/Idle_2.png", "resource/Walk.png", "resource/Shot.png", "resource/Jump.png", "Audio/Gun.mp3", 120.0f, 270.0f, 2.0f);
     player.SetJumpSpeed(15.0f);
     player.SetGravity(0.8f);
     player.SetGroundY(270.0f);
     player.SetFireCooldown(0.3f);
+    player.SetGunshotVolume(0.7f);
     // Example of creating multiple characters
     std::vector<Character *> npcs;
 

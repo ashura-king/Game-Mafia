@@ -14,6 +14,8 @@ private:
   Texture2D walkTexture;
   Texture2D jumpTexture;
   Texture2D shotTexture;
+  Sound gunshotSound;
+  bool soundLoaded;
 
   // Animations
   Animation idleRightAnim;
@@ -37,17 +39,18 @@ private:
   float groundY;
   float jumpSpeed;
   // Shot properties
-  bool isFiring;
   float fireTimer;
   float fireCooldown;
+  bool isFiring;
 
 public:
-  // Constructor
+  // Constructor - FIXED parameter order to match implementation
   Character(const std::string &idlePath,
             const std::string &idleLeftPath,
             const std::string &walkPath,
-            const std::string &jump = " ",
-            const std::string &shot = " ",
+            const std::string &shot = "",             // Fixed: empty string instead of space
+            const std::string &jump = "",             // Fixed: empty string instead of space
+            const std::string &gunshotSoundPath = "", // Fixed: moved to correct position
             float startX = 0.0f,
             float startY = 0.0f,
             float characterSpeed = 2.0f);
@@ -71,6 +74,9 @@ public:
   void Shot();
   void SetPosition(float newX, float newY);
   void SetDirection(Direction newDirection);
+  void PlayGunshotSound();
+  void SetGunshotVolume(float volume); // Fixed: added missing parameter
+  bool IsGunshotPlaying() const;
 
   // Rendering
   void Draw();
@@ -96,4 +102,4 @@ public:
   void SetSize(float newWidth, float newHeight);
 };
 
-#endif // CHARACTER_HPP
+#endif
