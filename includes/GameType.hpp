@@ -17,10 +17,20 @@ enum class AnimationType
   ONESHOT
 };
 
+enum class CharacterState
+{
+  FIRING,
+  JUMPING,
+  RUNNING,
+  WALKING,
+  IDLE_RIGHT,
+  IDLE_LEFT
+};
+
 enum Direction
 {
-  Left = -1,
-  Right = 1
+  LEFT = -1,
+  RIGHT = 1
 };
 
 struct Animation

@@ -14,6 +14,7 @@ private:
   Texture2D walkTexture;
   Texture2D jumpTexture;
   Texture2D shotTexture;
+  Texture2D runTexture;
   Sound gunshotSound;
   bool soundLoaded;
 
@@ -23,6 +24,7 @@ private:
   Animation walkAnim;
   Animation jumpAnim;
   Animation shotAnim;
+  Animation runAnim;
 
   // Properties
   float x, y;
@@ -30,6 +32,7 @@ private:
   float speed;
   Direction direction;
   bool isWalking;
+  bool isRunning;
   bool isLoaded;
   // Jump Properties
   bool isJumping;
@@ -43,14 +46,18 @@ private:
   float fireCooldown;
   bool isFiring;
 
+  // Helper functions for cleaner Draw() method
+  CharacterState GetCurrentState() const;
+  void GetTextureAndAnimation(Texture2D &texture, Rectangle &source);
+
 public:
-  // Constructor - FIXED parameter order to match implementation
   Character(const std::string &idlePath,
             const std::string &idleLeftPath,
             const std::string &walkPath,
-            const std::string &shot = "",             // Fixed: empty string instead of space
-            const std::string &jump = "",             // Fixed: empty string instead of space
-            const std::string &gunshotSoundPath = "", // Fixed: moved to correct position
+            const std::string &runningPath,
+            const std::string &shot = "",
+            const std::string &jump = "",
+            const std::string &gunshotSoundPath = "",
             float startX = 0.0f,
             float startY = 0.0f,
             float characterSpeed = 2.0f);
@@ -60,22 +67,23 @@ public:
 
   // Update methods
   void Update();
-  void HandleInput();                // For player character
-  void UpdatePosition(float deltaX); // Manual position update
+  void HandleInput();
+  void UpdatePosition(float deltaX);
   void UpdateAnimations();
   void UpdateJumpAnimation();
   void UpdateShotAnimation();
-
+  void UpdateRunAnimation();
   // Movement methods
   void MoveLeft();
   void MoveRight();
   void StopMoving();
   void Jump();
   void Shot();
+  void Run();
   void SetPosition(float newX, float newY);
   void SetDirection(Direction newDirection);
   void PlayGunshotSound();
-  void SetGunshotVolume(float volume); // Fixed: added missing parameter
+  void SetGunshotVolume(float volume);
   bool IsGunshotPlaying() const;
 
   // Rendering
@@ -88,6 +96,7 @@ public:
   float GetHeight() const { return height; }
   Direction GetDirection() const { return direction; }
   bool IsWalking() const { return isWalking; }
+  bool IsRunning() const { return isRunning; }
   bool IsJumping() const { return isJumping; }
   bool IsFiring() const { return isFiring; }
   bool IsOnGround() const { return isOnGround; }
