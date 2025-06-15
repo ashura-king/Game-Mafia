@@ -5,6 +5,7 @@
 #include "includes/GameLayer.hpp"
 #include "includes/GameType.hpp"
 #include "includes/Character.hpp"
+#include "includes/Popup.hpp"
 #include <vector>
 #include <string>
 
@@ -24,8 +25,8 @@ int main()
     InitAudioDevice();
 
     // Load sounds and music
-    Sound clickSound = LoadSound("Audio/Clicked.mp3");
-    Music backgroundMusic = LoadMusicStream("Audio/IntroSound.mp3");
+    Sound clickSound = LoadSound("Audio/start.mp3");
+    Music backgroundMusic = LoadMusicStream("Audio/IntroSong.mp3");
     Music playingMusic = LoadMusicStream("Audio/PlayingSound.mp3");
 
     Gamestate currentState = Gamestate::MENU;
@@ -43,7 +44,9 @@ int main()
                      "resource/Run.png",
                      "resource/Shot.png",
                      "resource/Jump.png",
+                     "resource/Attack_1.png",
                      "Audio/Gun.mp3",
+                     "Audio/Attack.mp3",
                      120.0f, 270.0f, 2.0f);
     player.SetJumpSpeed(15.0f);
     player.SetGravity(0.8f);
@@ -83,6 +86,8 @@ int main()
 
     Button startButton("resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f);
     Button exitButton("resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f);
+    Button yesButton("resource/yes.png", "resource/yes2.png", "resource/yes3.png", 2.5f);
+    Button noButton("resource/no.png", "resource/no2.png", "resource/no3.png", 2.5f);
 
     int frameCounter = 0;
     int dotCount = 0;
@@ -93,6 +98,8 @@ int main()
     bool fadeOutComplete = false;
     bool playingMusicStarted = false;
     bool running = true;
+    bool showExitPop = false;
+    Popup popup;
 
     PlayMusicStream(backgroundMusic);
 
@@ -119,17 +126,25 @@ int main()
 
             if (exitButton.IsClicked())
             {
+
                 PlaySound(clickSound);
-                running = false;
+                showExitPop = true;
             }
 
             BeginDrawing();
             ClearBackground(GetColor(0x052c46ff));
+
             for (Layer *layer : menuLayers)
                 layer->Draw();
             startButton.Draw();
             exitButton.Draw();
             DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
+
+            if (showExitPop)
+            {
+                popup.DrawExitPopup(running, showExitPop, clickSound, yesButton, noButton);
+            }
+
             EndDrawing();
             break;
 

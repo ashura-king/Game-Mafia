@@ -89,3 +89,8 @@ Vector2 Button::GetCenteredPosition(const char *file, float scale)
   UnloadTexture(temp);
   return center;
 }
+
+void Button::SetPosition(Vector2 newposition)
+{
+  position = newposition;
+}

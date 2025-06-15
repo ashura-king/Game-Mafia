@@ -19,6 +19,7 @@ enum class AnimationType
 
 enum class CharacterState
 {
+  ATTACKING,
   FIRING,
   JUMPING,
   RUNNING,

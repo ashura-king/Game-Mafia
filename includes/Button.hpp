@@ -26,6 +26,7 @@ public:
   void Update();
   bool IsClicked();
   bool IsHovered();
+  void SetPosition(Vector2 newposition);
 
   static Vector2 GetCenteredPosition(const char *file, float scale);
 };

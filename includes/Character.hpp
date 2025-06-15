@@ -15,6 +15,8 @@ private:
   Texture2D jumpTexture;
   Texture2D shotTexture;
   Texture2D runTexture;
+  Texture2D melleeTexture;
+  Sound melleeSound;
   Sound gunshotSound;
   bool soundLoaded;
 
@@ -25,6 +27,7 @@ private:
   Animation jumpAnim;
   Animation shotAnim;
   Animation runAnim;
+  Animation melleeAnim;
 
   // Properties
   float x, y;
@@ -45,8 +48,14 @@ private:
   float fireTimer;
   float fireCooldown;
   bool isFiring;
-
-  // Helper functions for cleaner Draw() method
+  // Mellee Properties
+  bool isAttacking;
+  float AttackTimer;
+  float AttackcoolDown;
+  float AttackRange;
+  int AttackDamage;
+  bool HitRegistered;
+  // Draw method
   CharacterState GetCurrentState() const;
   void GetTextureAndAnimation(Texture2D &texture, Rectangle &source);
 
@@ -57,7 +66,9 @@ public:
             const std::string &runningPath,
             const std::string &shot = "",
             const std::string &jump = "",
+            const std::string &attack = "",
             const std::string &gunshotSoundPath = "",
+            const std::string &attackSoundPath = "",
             float startX = 0.0f,
             float startY = 0.0f,
             float characterSpeed = 2.0f);
@@ -73,6 +84,7 @@ public:
   void UpdateJumpAnimation();
   void UpdateShotAnimation();
   void UpdateRunAnimation();
+  void UpdateAttackAnimation();
   // Movement methods
   void MoveLeft();
   void MoveRight();
@@ -80,11 +92,19 @@ public:
   void Jump();
   void Shot();
   void Run();
+  void Attack();
   void SetPosition(float newX, float newY);
   void SetDirection(Direction newDirection);
   void PlayGunshotSound();
+  void PlayAttackSound();
   void SetGunshotVolume(float volume);
   bool IsGunshotPlaying() const;
+  void SetAttackSound(float volume);
+  bool isAttackPlaying() const;
+
+  Rectangle GetAttackHitbox() const;
+  bool CanAttack() const;
+  void ResetAttack();
 
   // Rendering
   void Draw();
@@ -99,8 +119,11 @@ public:
   bool IsRunning() const { return isRunning; }
   bool IsJumping() const { return isJumping; }
   bool IsFiring() const { return isFiring; }
+  bool IsAttacking() const { return isAttacking; }
   bool IsOnGround() const { return isOnGround; }
   bool IsLoaded() const { return isLoaded; }
+  float GetAttackRange() const { return AttackRange; }
+  int GetAttackDamage() const { return AttackDamage; }
 
   // Setters
   void SetSpeed(float newSpeed) { speed = newSpeed; }
@@ -108,6 +131,9 @@ public:
   void SetGravity(float newGravity) { gravity = newGravity; }
   void SetGroundY(float newGroundY) { groundY = newGroundY; }
   void SetFireCooldown(float newCooldown) { fireCooldown = newCooldown; }
+  void SetAttackCooldown(float newCooldown) { AttackcoolDown = newCooldown; }
+  void SetAttackRange(float newRange) { AttackRange = newRange; }
+  void SetAttackDamage(int newDamage) { AttackDamage = newDamage; }
   void SetSize(float newWidth, float newHeight);
 };
 

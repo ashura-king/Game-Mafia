@@ -8,24 +8,29 @@ Character::Character(const std::string &idlePath,
                      const std::string &runningPath,
                      const std::string &shot,
                      const std::string &jump,
+                     const std::string &attack,
                      const std::string &gunshotSoundPath,
+                     const std::string &attackSoundPath,
                      float startX,
                      float startY,
                      float characterSpeed)
     : idleTexture{},
       idleLeftTexture{},
       walkTexture{},
-      jumpTexture{},      // 4
-      shotTexture{},      // 5
-      runTexture{},       // 6
-      gunshotSound{},     // 7
-      soundLoaded(false), // 8
-      idleRightAnim{},    // 9
-      idleLeftAnim{},     // 10
-      walkAnim{},         // 11
-      jumpAnim{},         // 12
-      shotAnim{},         // 13
+      jumpTexture{},
+      shotTexture{},
+      runTexture{},
+      melleeTexture{},
+      melleeSound{},
+      gunshotSound{},
+      soundLoaded(false),
+      idleRightAnim{},
+      idleLeftAnim{},
+      walkAnim{},
+      jumpAnim{},
+      shotAnim{},
       runAnim{},
+      melleeAnim{},
       x(startX),
       y(startY),
       width(0),
@@ -43,7 +48,13 @@ Character::Character(const std::string &idlePath,
       jumpSpeed(15.0f),
       fireTimer(0.0f),
       fireCooldown(0.3f),
-      isFiring(false)
+      isFiring(false),
+      isAttacking(false),
+      AttackTimer(0.0f),
+      AttackcoolDown(0.5f),
+      AttackRange(50.0f),
+      AttackDamage(25),
+      HitRegistered(false)
 {
   groundY = startY;
 
@@ -69,7 +80,19 @@ Character::Character(const std::string &idlePath,
     isLoaded = false;
   }
 
-  // Load optional running texture
+  if (!attack.empty())
+  {
+    melleeTexture = LoadTexture(attack.c_str());
+    if (melleeTexture.id == 0)
+    {
+      TraceLog(LOG_ERROR, "Failed to load melee texture: %s", attack.c_str());
+    }
+  }
+  else
+  {
+    melleeTexture = {0};
+  }
+
   if (!runningPath.empty())
   {
     runTexture = LoadTexture(runningPath.c_str());
@@ -129,6 +152,21 @@ Character::Character(const std::string &idlePath,
       soundLoaded = false;
     }
   }
+  if (!attackSoundPath.empty())
+  {
+    melleeSound = LoadSound(attackSoundPath.c_str());
+
+    if (melleeSound.stream.buffer != nullptr)
+    {
+      soundLoaded = true;
+      SetSoundVolume(melleeSound, 0.7f);
+    }
+    else
+    {
+      TraceLog(LOG_ERROR, "Failed to load gunshot sound: %s", attackSoundPath.c_str());
+      soundLoaded = false;
+    }
+  }
 
   // Set character dimensions
   width = 128 * 2;
@@ -140,8 +178,9 @@ Character::Character(const std::string &idlePath,
   walkAnim = {0, 5, 0, 0.08f, 0.08f, 1, AnimationType::REPEATING};
   jumpAnim = {0, 9, 0, 0.1f, 0.1f, 1, AnimationType::ONESHOT};
   shotAnim = {0, 4, 0, 0.05f, 0.05f, 1, AnimationType::ONESHOT};
-  runAnim = {0, 9, 0, 0.1f, 0.1f, 1, AnimationType::REPEATING}; // Fixed: Changed to REPEATING
-}
+  runAnim = {0, 9, 0, 0.1f, 0.1f, 1, AnimationType::REPEATING};
+  melleeAnim = {0, 3, 0, 0.1f, 0.1f, 1, AnimationType::ONESHOT};
+};
 
 Character::~Character()
 {
@@ -158,11 +197,14 @@ Character::~Character()
     UnloadTexture(shotTexture);
   if (runTexture.id != 0)
     UnloadTexture(runTexture);
+  if (melleeTexture.id != 0)
+    UnloadTexture(melleeTexture);
 
   // Unload sound resource
   if (soundLoaded)
   {
     UnloadSound(gunshotSound);
+    UnloadSound(melleeSound);
   }
 }
 
@@ -170,10 +212,19 @@ void Character::Update()
 {
   fireTimer -= GetFrameTime();
   fireTimer = std::max(fireTimer, 0.0f);
+
+  // Keep character within screen bounds
+  float screenWidth = GetScreenWidth();
+  if (x < 0)
+    x = 0;
+  if (x + width > screenWidth)
+    x = screenWidth - width;
+
   UpdateAnimations();
   UpdateJumpAnimation();
   UpdateShotAnimation();
   UpdateRunAnimation();
+  UpdateAttackAnimation();
 }
 
 void Character::HandleInput()
@@ -182,7 +233,7 @@ void Character::HandleInput()
 
   if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
   {
-    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+    if (IsKeyDown(KEY_SPACE))
     {
       direction = RIGHT;
       Run();
@@ -195,7 +246,7 @@ void Character::HandleInput()
   }
   else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
   {
-    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+    if (IsKeyDown(KEY_SPACE))
     {
       direction = LEFT;
       Run();
@@ -222,6 +273,11 @@ void Character::HandleInput()
   {
     Shot();
   }
+
+  if ((IsKeyDown(KEY_K) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) && AttackTimer <= 0.0f)
+  {
+    Attack();
+  }
 }
 
 void Character::UpdatePosition(float deltaX)
@@ -240,6 +296,10 @@ void Character::UpdatePosition(float deltaX)
 
 void Character::UpdateAnimations()
 {
+  if (isAttacking)
+  {
+    Animation_Update(&melleeAnim);
+  }
   if (isFiring)
   {
     Animation_Update(&shotAnim);
@@ -308,6 +368,45 @@ void Character::UpdateShotAnimation()
   }
 }
 
+void Character::UpdateAttackAnimation()
+{
+  static bool attackMoveApplied = false;
+
+  if (isAttacking)
+  {
+
+    if (AttackTimer == AttackcoolDown)
+    {
+      attackMoveApplied = false;
+    }
+
+    AttackTimer -= GetFrameTime();
+
+    if (!attackMoveApplied && AttackTimer <= (AttackcoolDown * 0.6f))
+    {
+      float moveDistance = AttackRange * 0.4f; // Move 40% of attack range forward
+      if (direction == RIGHT)
+      {
+        x += moveDistance;
+      }
+      else
+      {
+        x -= moveDistance;
+      }
+      attackMoveApplied = true;
+      TraceLog(LOG_INFO, "Attack movement applied: %.2f", moveDistance);
+    }
+
+    if (AttackTimer <= 0.0f)
+    {
+      isAttacking = false;
+      melleeAnim.curr = melleeAnim.first;
+      melleeAnim.duration_left = melleeAnim.speed;
+      attackMoveApplied = false;
+    }
+  }
+}
+
 void Character::MoveLeft()
 {
   x -= speed;
@@ -371,6 +470,33 @@ void Character::Shot()
   }
 }
 
+void Character::Attack()
+{
+  if (!isAttacking && AttackTimer <= 0.0f)
+  {
+    isAttacking = true;
+    AttackTimer = AttackcoolDown;
+    melleeAnim.curr = melleeAnim.first;
+    melleeAnim.duration_left = melleeAnim.speed;
+    PlayAttackSound();
+
+    TraceLog(LOG_INFO, "Attack triggered with forward movement.");
+  }
+}
+
+bool Character::CanAttack() const
+{
+  return !isAttacking && AttackTimer <= 0.0f;
+}
+
+void Character::ResetAttack()
+{
+  isAttacking = false;
+  AttackTimer = 0.0f;
+  HitRegistered = false;
+  melleeAnim.curr = 0;
+}
+
 void Character::PlayGunshotSound()
 {
   if (soundLoaded)
@@ -380,6 +506,26 @@ void Character::PlayGunshotSound()
       StopSound(gunshotSound);
     }
     PlaySound(gunshotSound);
+  }
+}
+
+void Character::PlayAttackSound()
+{
+
+  if (soundLoaded)
+  {
+    // Lower volume for melee attack to differentiate from gunshot
+    float originalVolume = 0.7f;
+    SetSoundVolume(melleeSound, 0.4f);
+
+    if (IsSoundPlaying(melleeSound))
+    {
+      StopSound(melleeSound);
+    }
+    PlaySound(melleeSound);
+
+    // Restore original volume
+    SetSoundVolume(melleeSound, originalVolume);
   }
 }
 
@@ -420,6 +566,8 @@ void Character::SetSize(float newWidth, float newHeight)
 // Helper function to determine current character state
 CharacterState Character::GetCurrentState() const
 {
+  if (isAttacking && melleeTexture.id != 0)
+    return CharacterState::ATTACKING;
   if (isFiring && shotTexture.id != 0)
     return CharacterState::FIRING;
 
@@ -442,6 +590,12 @@ void Character::GetTextureAndAnimation(Texture2D &texture, Rectangle &source)
 
   switch (state)
   {
+  case CharacterState::ATTACKING:
+    texture = melleeTexture;
+    source = animation_frame(&melleeAnim, 128, 128);
+    if (direction == LEFT)
+      source.width = -source.width;
+    break;
   case CharacterState::FIRING:
     texture = shotTexture;
     source = animation_frame(&shotAnim, 128, 128);
@@ -494,7 +648,6 @@ void Character::Draw()
   Texture2D currentTexture;
   Rectangle source;
 
-  // Use the helper function to get texture and source rectangle
   GetTextureAndAnimation(currentTexture, source);
 
   Rectangle dest = {x, y, width, height};
