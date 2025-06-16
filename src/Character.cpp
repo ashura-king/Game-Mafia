@@ -1,4 +1,5 @@
 #include "includes/Character.hpp"
+#include "includes/GunFire.hpp"
 #include <raylib.h>
 #include <algorithm>
 
@@ -11,6 +12,7 @@ Character::Character(const std::string &idlePath,
                      const std::string &attack,
                      const std::string &gunshotSoundPath,
                      const std::string &attackSoundPath,
+                     const std::string &bulletPath,
                      float startX,
                      float startY,
                      float characterSpeed)
@@ -21,6 +23,7 @@ Character::Character(const std::string &idlePath,
       shotTexture{},
       runTexture{},
       melleeTexture{},
+      bulletTexture{},
       melleeSound{},
       gunshotSound{},
       soundLoaded(false),
@@ -56,14 +59,13 @@ Character::Character(const std::string &idlePath,
       AttackDamage(25),
       HitRegistered(false)
 {
+
   groundY = startY;
 
-  // Load textures
   idleTexture = LoadTexture(idlePath.c_str());
   idleLeftTexture = LoadTexture(idleLeftPath.c_str());
   walkTexture = LoadTexture(walkPath.c_str());
 
-  // Check if basic textures loaded successfully
   if (idleTexture.id == 0)
   {
     TraceLog(LOG_ERROR, "Failed to load idle texture: %s", idlePath.c_str());
@@ -99,7 +101,7 @@ Character::Character(const std::string &idlePath,
     if (runTexture.id == 0)
     {
       TraceLog(LOG_ERROR, "Failed to load running texture: %s", runningPath.c_str());
-      runTexture = {0}; // Only reset if loading failed
+      runTexture = {0};
     }
   }
   else
@@ -135,12 +137,23 @@ Character::Character(const std::string &idlePath,
     jumpTexture = {0};
   }
 
+  if (!bulletPath.empty())
+  {
+    bulletTexture = LoadTexture(bulletPath.c_str());
+    if (bulletTexture.id == 0)
+    {
+      TraceLog(LOG_ERROR, "failed to load bullet texture %s", bulletPath.c_str());
+    }
+  }
+  else
+  {
+    bulletTexture = {0};
+  }
   // Load optional gunshot sound
   if (!gunshotSoundPath.empty())
   {
     gunshotSound = LoadSound(gunshotSoundPath.c_str());
 
-    // Check if the sound loaded properly by inspecting its internal data
     if (gunshotSound.stream.buffer != nullptr)
     {
       soundLoaded = true;
@@ -152,6 +165,7 @@ Character::Character(const std::string &idlePath,
       soundLoaded = false;
     }
   }
+
   if (!attackSoundPath.empty())
   {
     melleeSound = LoadSound(attackSoundPath.c_str());
@@ -199,6 +213,8 @@ Character::~Character()
     UnloadTexture(runTexture);
   if (melleeTexture.id != 0)
     UnloadTexture(melleeTexture);
+  if (bulletTexture.id != 0)
+    UnloadTexture(bulletTexture);
 
   // Unload sound resource
   if (soundLoaded)
@@ -219,6 +235,11 @@ void Character::Update()
     x = 0;
   if (x + width > screenWidth)
     x = screenWidth - width;
+  // Update bullets
+  for (auto &bullet : bullets)
+  {
+    bullet.Update();
+  }
 
   UpdateAnimations();
   UpdateJumpAnimation();
@@ -258,7 +279,6 @@ void Character::HandleInput()
     wasMoving = true;
   }
 
-  // Only reset movement states if not moving
   if (!wasMoving)
   {
     StopMoving();
@@ -364,6 +384,7 @@ void Character::UpdateShotAnimation()
       isFiring = false;
       shotAnim.curr = shotAnim.first;
       shotAnim.duration_left = shotAnim.speed;
+      TraceLog(LOG_INFO, "Attack movement applied:");
     }
   }
 }
@@ -384,7 +405,7 @@ void Character::UpdateAttackAnimation()
 
     if (!attackMoveApplied && AttackTimer <= (AttackcoolDown * 0.6f))
     {
-      float moveDistance = AttackRange * 0.4f; // Move 40% of attack range forward
+      float moveDistance = AttackRange * 0.4f;
       if (direction == RIGHT)
       {
         x += moveDistance;
@@ -466,7 +487,27 @@ void Character::Shot()
     fireTimer = fireCooldown;
     shotAnim.curr = shotAnim.first;
     shotAnim.duration_left = shotAnim.speed;
-    PlayGunshotSound();
+
+    if (soundLoaded)
+      PlaySound(gunshotSound);
+
+    float muzzleOffsetX = (direction == Direction::RIGHT) ? (width - 9.0f) : (9.0f);
+    float muzzleOffsetY = height / 1.5f;
+    Vector2 pos = {
+        x + muzzleOffsetX,
+        y + muzzleOffsetY};
+
+    int dir = (direction == Direction::RIGHT) ? 1 : -1;
+    float spd = 8.0f;
+
+    // Optional: check texture
+    if (bulletTexture.id == 0)
+    {
+      TraceLog(LOG_WARNING, "Bullet texture not loaded!");
+    }
+
+    Gunfire bullet(bulletTexture, pos, spd, dir);
+    bullets.push_back(bullet);
   }
 }
 
@@ -514,7 +555,7 @@ void Character::PlayAttackSound()
 
   if (soundLoaded)
   {
-    // Lower volume for melee attack to differentiate from gunshot
+
     float originalVolume = 0.7f;
     SetSoundVolume(melleeSound, 0.4f);
 
@@ -524,7 +565,6 @@ void Character::PlayAttackSound()
     }
     PlaySound(melleeSound);
 
-    // Restore original volume
     SetSoundVolume(melleeSound, originalVolume);
   }
 }
@@ -563,7 +603,6 @@ void Character::SetSize(float newWidth, float newHeight)
   height = newHeight;
 }
 
-// Helper function to determine current character state
 CharacterState Character::GetCurrentState() const
 {
   if (isAttacking && melleeTexture.id != 0)
@@ -583,7 +622,6 @@ CharacterState Character::GetCurrentState() const
   return (direction == RIGHT) ? CharacterState::IDLE_RIGHT : CharacterState::IDLE_LEFT;
 }
 
-// Helper function to get All Texture
 void Character::GetTextureAndAnimation(Texture2D &texture, Rectangle &source)
 {
   CharacterState state = GetCurrentState();
@@ -654,4 +692,8 @@ void Character::Draw()
   Vector2 origin = {0, 0};
 
   DrawTexturePro(currentTexture, source, dest, origin, 0.0f, WHITE);
+  for (auto &bullet : bullets)
+  {
+    bullet.Draw();
+  }
 }

@@ -24,9 +24,8 @@ int main()
     SetTargetFPS(60);
     InitAudioDevice();
 
-    // Load sounds and music
     Sound clickSound = LoadSound("Audio/start.mp3");
-    Music backgroundMusic = LoadMusicStream("Audio/IntroSong.mp3");
+    Music backgroundMusic = LoadMusicStream("Audio/Intro1.mp3");
     Music playingMusic = LoadMusicStream("Audio/PlayingSound.mp3");
 
     Gamestate currentState = Gamestate::MENU;
@@ -37,7 +36,6 @@ int main()
         (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
         20.0f * scale};
 
-    // Create characters
     Character player("resource/Idle.png",
                      "resource/Idle_2.png",
                      "resource/Walk.png",
@@ -47,18 +45,16 @@ int main()
                      "resource/Attack_1.png",
                      "Audio/Gun.mp3",
                      "Audio/Attack.mp3",
+                     "resource/bullet.png",
                      120.0f, 270.0f, 2.0f);
+
     player.SetJumpSpeed(15.0f);
     player.SetGravity(0.8f);
     player.SetGroundY(270.0f);
     player.SetFireCooldown(0.3f);
     player.SetGunshotVolume(0.7f);
-    // Example of creating multiple characters
-    std::vector<Character *> npcs;
 
-    // npcs.push_back(new Character("resource/npc_idle.png", "resource/npc_idle_left.png", "resource/npc_walk.png", 300.0f, 270.0f, 1.0f));
-
-    // Game layers setup
+    // Game layers
     Gamelayer mainsky("resource/mainsky.png", 0.0f, scale);
     Gamelayer backhouse("resource/housemain2.png", 0.0f, scale);
     Gamelayer middlehouse("resource/housemain.png", 0.0f, scale);
@@ -113,22 +109,23 @@ int main()
             for (Layer *layer : menuLayers)
                 layer->Update();
 
-            startButton.Update();
-            exitButton.Update();
-
-            if (startButton.IsClicked())
+            if (!showExitPop)
             {
-                PlaySound(clickSound);
-                currentState = Gamestate::GAME;
-                gameTimer = 0;
-                fadeOutComplete = false;
-            }
+                startButton.Update();
+                exitButton.Update();
+                if (startButton.IsClicked())
+                {
+                    PlaySound(clickSound);
+                    currentState = Gamestate::GAME;
+                    gameTimer = 0;
+                    fadeOutComplete = false;
+                }
 
-            if (exitButton.IsClicked())
-            {
-
-                PlaySound(clickSound);
-                showExitPop = true;
+                if (exitButton.IsClicked())
+                {
+                    PlaySound(clickSound);
+                    showExitPop = true;
+                }
             }
 
             BeginDrawing();
@@ -190,13 +187,11 @@ int main()
 
         case Gamestate::PLAYING:
         {
-            // Handle player input and movement
             float moveSpeed = 2.0f;
             float backgroundSpeed = 0.0f;
 
             player.HandleInput();
 
-            // Calculate background scrolling based on player position
             float newPlayerX = player.GetX();
             if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
             {
@@ -216,21 +211,11 @@ int main()
                 }
             }
 
-            // Update player
             player.Update();
 
-            // Update NPCs
-            for (Character *npc : npcs)
-            {
-                npc->Update();
-                // You can add AI logic here for NPCs
-            }
-
-            // Update background layers
             for (Gamelayer *main : mainlayers)
                 main->UpdateLayer(backgroundSpeed);
 
-            // Music handling
             if (!playingMusicStarted)
             {
                 StopMusicStream(backgroundMusic);
@@ -241,33 +226,18 @@ int main()
 
             UpdateMusicStream(playingMusic);
 
-            // Rendering
             BeginDrawing();
             ClearBackground(WHITE);
 
-            // Draw background layers
             for (Gamelayer *main : mainlayers)
                 main->Drawlayer();
 
-            // Draw characters
             player.Draw();
-
-            // Draw NPCs
-            for (Character *npc : npcs)
-            {
-                npc->Draw();
-            }
 
             EndDrawing();
             break;
         }
         }
-    }
-
-    // Cleanup
-    for (Character *npc : npcs)
-    {
-        delete npc;
     }
 
     UnloadMusicStream(playingMusic);

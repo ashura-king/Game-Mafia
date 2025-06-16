@@ -3,6 +3,7 @@
 
 #include <raylib.h>
 #include "GameType.hpp"
+#include "includes/GunFire.hpp"
 #include <string>
 
 class Character
@@ -16,6 +17,7 @@ private:
   Texture2D shotTexture;
   Texture2D runTexture;
   Texture2D melleeTexture;
+  Texture2D bulletTexture;
   Sound melleeSound;
   Sound gunshotSound;
   bool soundLoaded;
@@ -55,6 +57,10 @@ private:
   float AttackRange;
   int AttackDamage;
   bool HitRegistered;
+
+  Vector2 position;
+  int direct;
+  std::vector<Gunfire> bullets;
   // Draw method
   CharacterState GetCurrentState() const;
   void GetTextureAndAnimation(Texture2D &texture, Rectangle &source);
@@ -66,9 +72,11 @@ public:
             const std::string &runningPath,
             const std::string &shot = "",
             const std::string &jump = "",
+            const std::string &bulletPath = "",
             const std::string &attack = "",
             const std::string &gunshotSoundPath = "",
             const std::string &attackSoundPath = "",
+
             float startX = 0.0f,
             float startY = 0.0f,
             float characterSpeed = 2.0f);
@@ -106,10 +114,8 @@ public:
   bool CanAttack() const;
   void ResetAttack();
 
-  // Rendering
   void Draw();
 
-  // Getters
   float GetX() const { return x; }
   float GetY() const { return y; }
   float GetWidth() const { return width; }
