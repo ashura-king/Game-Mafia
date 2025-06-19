@@ -16,9 +16,9 @@ private:
   Texture2D jumpTexture;
   Texture2D shotTexture;
   Texture2D runTexture;
-  Texture2D melleeTexture;
+  Texture2D MeleeTexture;
   Texture2D bulletTexture;
-  Sound melleeSound;
+  Sound MeleeSound;
   Sound gunshotSound;
   bool soundLoaded;
 
@@ -29,7 +29,7 @@ private:
   Animation jumpAnim;
   Animation shotAnim;
   Animation runAnim;
-  Animation melleeAnim;
+  Animation MeleeAnim;
 
   // Properties
   float x, y;
@@ -50,14 +50,14 @@ private:
   float fireTimer;
   float fireCooldown;
   bool isFiring;
-  // Mellee Properties
+  // Melee Properties
   bool isAttacking;
   float AttackTimer;
   float AttackcoolDown;
   float AttackRange;
   int AttackDamage;
   bool HitRegistered;
-
+  float currentMovementSpeed = 0.0f;
   Vector2 position;
   int direct;
   std::vector<Gunfire> bullets;
@@ -130,6 +130,7 @@ public:
   bool IsLoaded() const { return isLoaded; }
   float GetAttackRange() const { return AttackRange; }
   int GetAttackDamage() const { return AttackDamage; }
+  float GetCurrentMovementSpeed() const { return currentMovementSpeed; }
 
   // Setters
   void SetSpeed(float newSpeed) { speed = newSpeed; }
@@ -141,6 +142,7 @@ public:
   void SetAttackRange(float newRange) { AttackRange = newRange; }
   void SetAttackDamage(int newDamage) { AttackDamage = newDamage; }
   void SetSize(float newWidth, float newHeight);
+  Vector2 GetPosition() const { return position; }
 };
 
 #endif

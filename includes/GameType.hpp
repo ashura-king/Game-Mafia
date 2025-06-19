@@ -28,6 +28,14 @@ enum class CharacterState
   IDLE_LEFT
 };
 
+enum class BotState
+{
+  IDLE,
+  WANDERING,
+  CHASING,
+  FLEEING,
+};
+
 enum Direction
 {
   LEFT = -1,

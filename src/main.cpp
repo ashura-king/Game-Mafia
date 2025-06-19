@@ -47,6 +47,10 @@ int main()
                      "Audio/Attack.mp3",
                      "resource/bullet.png",
                      120.0f, 270.0f, 2.0f);
+    float groundY = 270.0f; // match with player
+    Vector2 enemySpawn = {(float)GetRandomValue(200, 800), groundY};
+
+    Enemy enemy("resource/enemyIdle.png", "resource/enemywalk.png", "EnemyAttack.png", enemySpawn, scale * 2.0f);
 
     player.SetJumpSpeed(15.0f);
     player.SetGravity(0.8f);
@@ -187,31 +191,13 @@ int main()
 
         case Gamestate::PLAYING:
         {
-            float moveSpeed = 2.0f;
-            float backgroundSpeed = 0.0f;
 
             player.HandleInput();
-
-            float newPlayerX = player.GetX();
-            if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
-            {
-                backgroundSpeed = moveSpeed;
-                if (newPlayerX > screenWidth - player.GetWidth())
-                {
-                    player.SetPosition(screenWidth - player.GetWidth(), player.GetY());
-                }
-            }
-            else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
-            {
-                backgroundSpeed = -moveSpeed;
-                if (newPlayerX < 0)
-                {
-                    player.SetPosition(0, player.GetY());
-                    backgroundSpeed = 0;
-                }
-            }
-
             player.Update();
+
+            float backgroundSpeed = player.GetCurrentMovementSpeed();
+
+            enemy.Update(GetFrameTime(), player.GetPosition());
 
             for (Gamelayer *main : mainlayers)
                 main->UpdateLayer(backgroundSpeed);
@@ -231,7 +217,7 @@ int main()
 
             for (Gamelayer *main : mainlayers)
                 main->Drawlayer();
-
+            enemy.Draw();
             player.Draw();
 
             EndDrawing();
