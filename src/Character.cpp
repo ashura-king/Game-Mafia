@@ -235,7 +235,7 @@ void Character::Update()
     x = 0;
   if (x + width > screenWidth)
     x = screenWidth - width;
-  // Update bullets
+
   for (auto &bullet : bullets)
   {
     bullet.Update();

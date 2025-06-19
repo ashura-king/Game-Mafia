@@ -42,7 +42,7 @@ Bot::Bot(const std::string &idlePath,
     runTexture = LoadTexture(runPath.c_str());
     if (runTexture.id == 0)
     {
-      TraceLog(LOG_ERROr, "failed to load run texture %s", runPath.c_str());
+      TraceLog(LOG_ERROR, "Failed to load run texture %s", runPath.c_str()); // Fixed: LOG_ERROr -> LOG_ERROR
     }
   }
   if (!attackPath.empty())
@@ -60,9 +60,10 @@ Bot::Bot(const std::string &idlePath,
   height = 128 * 2;
 
   // Initialize animations
-  idleRightAnim = {0, 4, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
-  idleLeftAnim = {0, 4, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
-  walkAnim = {0, 4, 0, 0.8f, 0.8f, 1, AnimationType::REPEATING};
+  idleRightAnim = {0, 7, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
+  idleLeftAnim = {0, 7, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
+  walkAnim = {0, 9, 0, 0.8f, 0.8f, 1, AnimationType::REPEATING};
+  runAnim = {0, 9, 0, 0.1f, 0.1f, 1, AnimationType::REPEATING};
   attackAnim = {0, 5, 0, 0.05f, 0.05f, 1, AnimationType::ONESHOT};
 
   isLoaded = true;
@@ -82,60 +83,85 @@ Bot::~Bot()
 
 void Bot::UpdateAI(Vector2 playerPos, float deltaTime)
 {
+
+  if (!IsAlive())
+    return;
+
   float distanceToPlayer = Vector2Distance({x, y}, playerPos);
   stateTimer += deltaTime;
 
-  if (distanceToPlayer < chaseRange)
+  // Attack logic - highest priority
+  if (distanceToPlayer < attackRange && CanAttack())
+  {
+    SetState(BotState::ATTACK);
+    Attack();
+  }
+  // Chase logic - only if not attacking
+  else if (distanceToPlayer < chaseRange && distanceToPlayer > attackRange)
   {
     SetState(BotState::CHASING);
     chasePlayer(playerPos);
   }
+  // Flee logic
   else if (distanceToPlayer > fleeingRange && state == BotState::CHASING)
   {
     SetState(BotState::FLEEING);
     wander(deltaTime);
   }
+  // Default wandering
   else if (state == BotState::IDLE || stateTimer > wanderTime)
   {
     SetState(BotState::WANDERING);
     wander(deltaTime);
   }
 }
+
+bool Bot::CheckCollisionWithPlayer(Vector2 playerPos, float playerWidth, float playerHeight)
+{
+  Rectangle botRect = {x, y, width, height};
+  Rectangle playerRect = {playerPos.x, playerPos.y, playerWidth, playerHeight};
+
+  return CheckCollisionRecs(botRect, playerRect);
+}
+
 void Bot::chasePlayer(Vector2 playerPos)
 {
-  Vector2 direction_to_Player = Vector2Subtract(playerPos{x, y});
-  Vector2 normalized_direction = Vector2Normalize(direction_to_Player);
+  Vector2 direction_to_player = Vector2Subtract(playerPos, {x, y});
+  Vector2 normalized_direction = Vector2Normalize(direction_to_player);
 
-  float chaseSpeed = speed * 1.5f;
-  x += normalize_direction.x * chaseSpeed;
-  y += normalize_direction.y * chaseSpeed;
+  float chaseSpeed = speed * 0.8f; // Slower than player
+  float nextX = x + normalized_direction.x * chaseSpeed;
+  float nextY = y + normalized_direction.y * chaseSpeed;
 
-  if (noramlize_direction.x < 0)
+  Vector2 nextPos = {nextX, nextY};
+  float distanceToPlayer = Vector2Distance(nextPos, playerPos);
+
+  if (distanceToPlayer > 70.0f)
+    x = nextX;
+  y = nextY;
+
+  if (normalized_direction.x < 0)
   {
-    direction = LEFT;
+    direction = Direction::LEFT;
   }
-  else if (normalize_direction.y > 0)
+  else if (normalized_direction.x > 0)
   {
-    direction = RIGHT;
-  }
-  else
-  {
-    printf("Error");
+    direction = Direction::RIGHT;
   }
 }
+
 void Bot::wander(float deltaTime)
 {
   wanderTimer -= deltaTime;
 
-  // If we don't have a wander target or timer expired, pick a new one
   if (wanderTimer <= 0.0f)
   {
-    // Choose between different wander patterns
+
     int wanderType = GetRandomValue(0, 2);
 
     if (wanderType == 0)
     {
-      // Long distance wander
+
       float wanderDistance = GetRandomValue(200, 400);
       float angle = GetRandomValue(0, 360) * DEG2RAD;
 
@@ -146,7 +172,6 @@ void Bot::wander(float deltaTime)
     }
     else if (wanderType == 1)
     {
-
       float patrolDistance = GetRandomValue(150, 300);
       wanderTarget.x = x + (GetRandomValue(0, 1) ? patrolDistance : -patrolDistance);
       wanderTarget.y = y;
@@ -155,8 +180,7 @@ void Bot::wander(float deltaTime)
     }
     else
     {
-
-      wanderTarget = {x, y}; // Don't move
+      wanderTarget = {x, y};
       wanderTimer = GetRandomValue(20, 40) / 10.0f;
     }
 
@@ -192,7 +216,7 @@ void Bot::wander(float deltaTime)
   }
   else
   {
-    // Reached target, pick new one soon
+
     if (wanderTimer > 1.0f)
     {
       wanderTimer = GetRandomValue(5, 15) / 10.0f;
@@ -214,6 +238,29 @@ void Bot::SetState(BotState newState)
     }
   }
 }
+void Bot::Attack()
+{
+  if (CanAttack())
+  {
+    isAttacking = true;
+    attackTimer = attackCooldown;
+    attackAnim.curr = 0;
+    attackAnim.duration_left = 0.0f;
+  }
+}
+bool Bot::CanAttack() const
+{
+  return attackTimer <= 0.0f && IsAlive();
+}
+
+void Bot::TakeDamage(int damage)
+{
+  health -= damage;
+  if (health < 0)
+    health = 0;
+
+  TraceLog(LOG_INFO, "Bot took %d damage, health: %d", damage, health);
+}
 void Bot::Patrol()
 {
   if (patrolWaypoints.empty())
@@ -233,21 +280,146 @@ void Bot::Patrol()
 
 void Bot::MoveTowards(Vector2 target)
 {
-  Vector2 distance_to_Target = Vector2Subtract(target, {x, y});
-  float distance = Vector2Distance(direction_to_Target);
+  Vector2 direction_to_target = Vector2Subtract(target, {x, y});
+  float distance = Vector2Length(direction_to_target);
+
   if (distance > 5.0f)
   {
-    Vector2 normalized_direction = Vector2Noramlize(direction_to_target);
+    Vector2 normalized_direction = Vector2Normalize(direction_to_target);
 
     x += normalized_direction.x * speed;
-    y += normalized _direction.y * speed;
+    y += normalized_direction.y * speed;
+
     if (normalized_direction.x < 0)
     {
-      direction = LEFT;
+      direction = Direction::LEFT;
     }
-    else if (normalized.y > 0)
+    else if (normalized_direction.x > 0)
     {
-      direction = RIGHT;
+      direction = Direction::RIGHT;
     }
+  }
+}
+
+void Bot::MoveAway(Vector2 threat)
+{
+  Vector2 direction_from_threat = Vector2Subtract({x, y}, threat);
+  Vector2 normalized_direction = Vector2Normalize(direction_from_threat);
+
+  x += normalized_direction.x * speed * 1.5f;
+  y += normalized_direction.y * speed * 1.5f;
+
+  if (normalized_direction.x < 0)
+
+  {
+    direction = Direction::LEFT;
+  }
+  else if (normalized_direction.x > 0)
+  {
+    direction = Direction::RIGHT;
+  }
+}
+void Bot::Update()
+{
+  attackTimer -= GetFrameTime();
+  attackTimer = std::max(attackTimer, 0.0f);
+  float screenWidth = GetScreenWidth();
+  if (x < 0)
+    x = 0;
+  if (x + width > screenWidth)
+    x = screenWidth - width;
+  UpdateAnimations();
+}
+void Bot::UpdateAnimations()
+{
+  switch (state)
+  {
+  case BotState::IDLE:
+    if (direction == Direction::RIGHT)
+    {
+      Animation_Update(&idleRightAnim);
+    }
+    else
+    {
+      Animation_Update(&idleLeftAnim);
+    }
+    break;
+
+  case BotState::WANDERING:
+  case BotState::CHASING:
+  case BotState::FLEEING:
+    Animation_Update(&walkAnim);
+    break;
+  case BotState::ATTACK:
+    Animation_Update(&attackAnim);
+    if (attackAnim.curr >= attackAnim.duration_left - 1)
+    {
+      isAttacking = false;
+      SetState(BotState::IDLE);
+    }
+  }
+}
+
+float Bot::DistanceTo(Vector2 target) const
+{
+  return Vector2Distance({x, y}, target);
+}
+
+bool Bot::IsPlayerInRange(Vector2 playerPosition, float range) const
+{
+  return DistanceTo(playerPosition) <= range;
+}
+
+void Bot::Draw()
+{
+  if (!isLoaded)
+    return;
+
+  Texture2D currentTexture;
+  Rectangle source;
+
+  GetTextureAndAnimation(currentTexture, source);
+
+  Rectangle dest = {x, y, width, height};
+  Vector2 origin = {0, 0};
+
+  DrawTexturePro(currentTexture, source, dest, origin, 0.0f, WHITE);
+}
+
+void Bot::GetTextureAndAnimation(Texture2D &texture, Rectangle &source)
+{
+  switch (state)
+  {
+  case BotState::IDLE:
+    if (direction == Direction::RIGHT)
+    {
+      texture = idleTexture;
+      source = animation_frame(&idleRightAnim, 128, 128);
+    }
+    else
+    {
+      texture = idleLeftTexture;
+      source = animation_frame(&idleLeftAnim, 128, 128);
+    }
+    break;
+
+  case BotState::WANDERING:
+  case BotState::CHASING:
+  case BotState::FLEEING:
+    texture = walkTexture;
+    source = animation_frame(&walkAnim, 128, 128);
+    if (direction == Direction::LEFT)
+    {
+      source.width = -source.width;
+    }
+    break;
+  case BotState::ATTACK:
+    texture = attackTexture;
+    source = animation_frame(&attackAnim, 128, 128);
+    if (direction == Direction::LEFT)
+    {
+      source.width = -source.width;
+    }
+    break;
   }
 }

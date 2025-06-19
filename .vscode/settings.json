@@ -70,6 +70,8 @@
     "*.dbclient-js": "javascript",
     "*.embeddedhtml": "html",
     "*.php": "php",
-    "algorithm": "cpp"
+    "algorithm": "cpp",
+    "utility": "cpp",
+    "xutility": "cpp"
   }
 }

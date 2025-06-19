@@ -34,8 +34,9 @@ private:
   float stateTimer;
 
   // AI behavior parameters - using your values
-  float chaseRange = 300.0f;
-  float fleeingRange = 500.0f;
+  float chaseRange = 200.0f;
+  float attackRange = 80.0f;
+  float fleeingRange = 400.0f;
   float wanderTime = 3.0f;
   float moveTime = 2.0f;
   float patrolStartX = 100.0f;
@@ -105,11 +106,11 @@ public:
   bool CanAttack() const;
   void TakeDamage(int damage);
   bool IsAlive() const { return health > 0; }
-  bool IsWalking() const { return isWalking; }
 
   // Utility functions
   float DistanceTo(Vector2 target) const;
   bool IsPlayerInRange(Vector2 playerPosition, float range) const;
+  bool CheckCollisionWithPlayer(Vector2 playerPos, float playerWidth, float playerHeight);
   Vector2 GetPosition() const { return {x, y}; }
   Rectangle GetBounds() const { return {x, y, width, height}; }
 

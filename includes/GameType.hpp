@@ -34,6 +34,7 @@ enum class BotState
   WANDERING,
   CHASING,
   FLEEING,
+  ATTACK
 };
 
 enum Direction

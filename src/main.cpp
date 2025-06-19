@@ -5,6 +5,7 @@
 #include "includes/GameLayer.hpp"
 #include "includes/GameType.hpp"
 #include "includes/Character.hpp"
+#include "includes/Bot.hpp"
 #include "includes/Popup.hpp"
 #include <vector>
 #include <string>
@@ -47,10 +48,14 @@ int main()
                      "Audio/Attack.mp3",
                      "resource/bullet.png",
                      120.0f, 270.0f, 2.0f);
-    float groundY = 270.0f; // match with player
-    Vector2 enemySpawn = {(float)GetRandomValue(200, 800), groundY};
-
-    Enemy enemy("resource/enemyIdle.png", "resource/enemywalk.png", "EnemyAttack.png", enemySpawn, scale * 2.0f);
+    Bot bot("resource/enemyIdle.png",
+            "resource/enemyIdle2.png",
+            "resource/enemyWalk.png",
+            "resource/enemyRun.png",
+            "resource/enemyAttack.png",
+            600.0f,
+            150.0f,
+            3.0f);
 
     player.SetJumpSpeed(15.0f);
     player.SetGravity(0.8f);
@@ -194,10 +199,12 @@ int main()
 
             player.HandleInput();
             player.Update();
+            Vector2 playerPos = {player.GetX(), player.GetY()};
+            float deltaTime = GetFrameTime();
+            bot.Update();
+            bot.UpdateAI(playerPos, deltaTime);
 
             float backgroundSpeed = player.GetCurrentMovementSpeed();
-
-            enemy.Update(GetFrameTime(), player.GetPosition());
 
             for (Gamelayer *main : mainlayers)
                 main->UpdateLayer(backgroundSpeed);
@@ -217,7 +224,7 @@ int main()
 
             for (Gamelayer *main : mainlayers)
                 main->Drawlayer();
-            enemy.Draw();
+            bot.Draw();
             player.Draw();
 
             EndDrawing();
