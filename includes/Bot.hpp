@@ -38,7 +38,7 @@ private:
   float attackRange = 80.0f;
   float fleeingRange = 400.0f;
   float wanderTime = 3.0f;
-  float moveTime = 2.0f;
+  float moveTime = 3.0f;
   float patrolStartX = 100.0f;
   float PatrolStartY = 600.0f;
 

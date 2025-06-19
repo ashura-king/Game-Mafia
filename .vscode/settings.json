@@ -72,6 +72,7 @@
     "*.php": "php",
     "algorithm": "cpp",
     "utility": "cpp",
-    "xutility": "cpp"
+    "xutility": "cpp",
+    "xstring": "cpp"
   }
 }

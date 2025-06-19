@@ -1,4 +1,5 @@
 #include "includes/Bot.hpp"
+#include "includes/GameType.hpp"
 #include "raylib.h"
 #include "raymath.h"
 #include <string>
@@ -62,9 +63,9 @@ Bot::Bot(const std::string &idlePath,
   // Initialize animations
   idleRightAnim = {0, 7, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
   idleLeftAnim = {0, 7, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
-  walkAnim = {0, 9, 0, 0.8f, 0.8f, 1, AnimationType::REPEATING};
+  walkAnim = {0, 9, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
   runAnim = {0, 9, 0, 0.1f, 0.1f, 1, AnimationType::REPEATING};
-  attackAnim = {0, 5, 0, 0.05f, 0.05f, 1, AnimationType::ONESHOT};
+  attackAnim = {0, 5, 0, 0.1f, 0.1f, 1, AnimationType::ONESHOT};
 
   isLoaded = true;
 }
@@ -90,19 +91,18 @@ void Bot::UpdateAI(Vector2 playerPos, float deltaTime)
   float distanceToPlayer = Vector2Distance({x, y}, playerPos);
   stateTimer += deltaTime;
 
-  // Attack logic - highest priority
   if (distanceToPlayer < attackRange && CanAttack())
   {
     SetState(BotState::ATTACK);
     Attack();
   }
-  // Chase logic - only if not attacking
+
   else if (distanceToPlayer < chaseRange && distanceToPlayer > attackRange)
   {
     SetState(BotState::CHASING);
     chasePlayer(playerPos);
   }
-  // Flee logic
+
   else if (distanceToPlayer > fleeingRange && state == BotState::CHASING)
   {
     SetState(BotState::FLEEING);
@@ -129,7 +129,7 @@ void Bot::chasePlayer(Vector2 playerPos)
   Vector2 direction_to_player = Vector2Subtract(playerPos, {x, y});
   Vector2 normalized_direction = Vector2Normalize(direction_to_player);
 
-  float chaseSpeed = speed * 0.8f; // Slower than player
+  float chaseSpeed = speed;
   float nextX = x + normalized_direction.x * chaseSpeed;
   float nextY = y + normalized_direction.y * chaseSpeed;
 
@@ -168,7 +168,7 @@ void Bot::wander(float deltaTime)
       wanderTarget.x = x + cosf(angle) * wanderDistance;
       wanderTarget.y = y + sinf(angle) * wanderDistance;
 
-      wanderTimer = GetRandomValue(40, 80) / 10.0f;
+      wanderTimer = GetRandomValue(80, 100) / 10.0f;
     }
     else if (wanderType == 1)
     {
@@ -244,8 +244,8 @@ void Bot::Attack()
   {
     isAttacking = true;
     attackTimer = attackCooldown;
-    attackAnim.curr = 0;
-    attackAnim.duration_left = 0.0f;
+    attackAnim.curr = attackAnim.first;
+    attackAnim.duration_left = attackAnim.speed;
   }
 }
 bool Bot::CanAttack() const
@@ -352,11 +352,13 @@ void Bot::UpdateAnimations()
     break;
   case BotState::ATTACK:
     Animation_Update(&attackAnim);
-    if (attackAnim.curr >= attackAnim.duration_left - 1)
+
+    if (attackAnim.curr >= attackAnim.last)
     {
       isAttacking = false;
       SetState(BotState::IDLE);
     }
+    break;
   }
 }
 

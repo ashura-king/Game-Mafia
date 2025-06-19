@@ -54,7 +54,7 @@ int main()
             "resource/enemyRun.png",
             "resource/enemyAttack.png",
             600.0f,
-            150.0f,
+            400.0f,
             3.0f);
 
     player.SetJumpSpeed(15.0f);
