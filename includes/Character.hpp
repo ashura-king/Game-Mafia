@@ -70,15 +70,14 @@ public:
             const std::string &idleLeftPath,
             const std::string &walkPath,
             const std::string &runningPath,
-            const std::string &shot = "",
-            const std::string &jump = "",
-            const std::string &bulletPath = "",
-            const std::string &attack = "",
-            const std::string &gunshotSoundPath = "",
-            const std::string &attackSoundPath = "",
-
-            float startX = 0.0f,
-            float startY = 0.0f,
+            const std::string &shot,
+            const std::string &jump,
+            const std::string &attack,
+            const std::string &gunshotSoundPath,
+            const std::string &attackSoundPath,
+            const std::string &bulletPath,
+            float startX,
+            float startY,
             float characterSpeed = 2.0f);
 
   // Destructor
@@ -143,6 +142,9 @@ public:
   void SetAttackDamage(int newDamage) { AttackDamage = newDamage; }
   void SetSize(float newWidth, float newHeight);
   Vector2 GetPosition() const { return position; }
+
+  Character(const Character &) = delete;
+  Character &operator=(const Character &) = delete;
 };
 
 #endif

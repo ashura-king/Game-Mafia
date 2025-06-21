@@ -10,25 +10,29 @@
 #include <vector>
 #include <string>
 
-class GameController
+class Controller
 {
 public:
-void Init(),
-    void Update(),
-    void Draw(),
-    void Unload(),
+  Controller();
+  Controller(const Controller &) = delete;
+  Controller &operator=(const Controller &) = delete;
+  void Init(int screenW, int screenH, int originalW, int originalH);
+  void Update();
+  void Draw();
+  void Unload();
 
-    private : GameState currentState;
+private:
+  Gamestate currentState;
   // core
-  Character player;
+  Character *player;
   std::vector<Bot> bots;
   void SpawnBots(int count);
   // UI
-  Button startButton, exitButton, yesButton, noButton;
+  Button *startButton, *exitButton, *yesButton, *noButton;
   Popup popup;
 
   Sound clickSound;
-  Music BackgroundMusic;
+  Music backgroundMusic;
   Music playingMusic;
   // Title
   Texture2D titleTexture;
@@ -42,11 +46,17 @@ void Init(),
   std::string animatedText;
   int frameCounter, dotCount, gameTimer;
   bool fadeOutComplete, showExitPop, playingMusicStarted, running;
+  int screenWidth, screenHeight;
+  int originalWidth, originalHeight;
+  float scaleX, scaleY;
+  float scale;
+  int maxDots;
+  int fadeDuration;
 
   void UpdateMenu();
-  void UpdatGame();
+  void UpdateGame();
   void UpdatePlaying();
   void DrawMenu();
   void DrawGame();
   void DrawPlaying();
-}
+};

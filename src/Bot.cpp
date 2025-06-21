@@ -30,6 +30,7 @@ Bot::Bot(BotType botType, float startX, float startY)
       state(BotState::IDLE),
       previousState(BotState::IDLE),
       stateTimer(0.0f),
+
       // AI parameters (will be set by SetBotProperties)
       chaseRange(0.0f),
       attackRange(0.0f),
@@ -194,28 +195,40 @@ void Bot::UpdateAI(Vector2 playerPos, float deltaTime)
   stateTimer += deltaTime;
 
   // Priority: Attack if in range and can attack
-  if (distanceToPlayer < attackRange && CanAttack())
+  if (distanceToPlayer < attackRange && CanAttack() && attackRange > 0.0f)
   {
     SetState(BotState::ATTACK);
     Attack();
   }
   // Chase if player is in chase range but not attack range
-  else if (distanceToPlayer < chaseRange && distanceToPlayer > attackRange)
+  else if (distanceToPlayer < chaseRange && distanceToPlayer > attackRange && chaseRange > 0.0f)
   {
     SetState(BotState::CHASING);
     chasePlayer(playerPos);
   }
   // Flee if player is too far and was chasing
-  else if (distanceToPlayer > fleeingRange && state == BotState::CHASING)
+  else if (distanceToPlayer < fleeingRange && fleeingRange > 0.0f)
   {
     SetState(BotState::FLEEING);
-    wander(deltaTime);
+    MoveAway(playerPos);
   }
   // Default wandering behavior
-  else if (state == BotState::IDLE || stateTimer > wanderTime)
+  else if (state == BotState::IDLE && stateTimer >= wanderTime)
   {
     SetState(BotState::WANDERING);
     wander(deltaTime);
+  }
+  else if (state == BotState::WANDERING)
+  {
+    wander(deltaTime);
+  }
+  if (stateTimer >= wanderTime * 2.0f)
+  {
+    SetState(BotState::IDLE);
+  }
+  else if (state != BotState::IDLE && state != BotState::ATTACK)
+  {
+    SetState(BotState::IDLE);
   }
 }
 
@@ -251,13 +264,15 @@ void Bot::wander(float deltaTime)
   wanderTimer -= deltaTime;
 
   // Set new wander target
-  if (wanderTimer <= 0.0f)
+  if (wanderTimer <= 0.0f || (wanderTarget.x == x && wanderTarget.y == y))
   {
     int wanderType = GetRandomValue(0, 2);
+    float screenWidth = GetScreenWidth();
+    float screenHeight = GetScreenHeight();
 
     if (wanderType == 0) // Random circular movement
     {
-      float wanderDistance = GetRandomValue(200, 400);
+      float wanderDistance = GetRandomValue(100, 200);
       float angle = GetRandomValue(0, 360) * DEG2RAD;
 
       wanderTarget.x = x + cosf(angle) * wanderDistance;
@@ -268,44 +283,51 @@ void Bot::wander(float deltaTime)
     {
       float patrolDistance = GetRandomValue(150, 300);
       wanderTarget.x = x + (GetRandomValue(0, 1) ? patrolDistance : -patrolDistance);
-      wanderTarget.y = y;
-      wanderTimer = GetRandomValue(30, 60) / 10.0f;
+      wanderTarget.y = y + GetRandomValue(-50, 50);
+      wanderTimer = GetRandomValue(20, 40) / 10.0f;
     }
     else // Stay in place
     {
       wanderTarget = {x, y};
-      wanderTimer = GetRandomValue(20, 40) / 10.0f;
+      wanderTimer = GetRandomValue(10, 30) / 10.0f;
+      SetState(BotState::IDLE);
+      return;
     }
 
     // Clamp to screen bounds
-    float screenWidth = GetScreenWidth();
-    float screenHeight = GetScreenHeight();
-    wanderTarget.x = Clamp(wanderTarget.x, 100.0f, screenWidth - 100.0f);
-    wanderTarget.y = Clamp(wanderTarget.y, 100.0f, screenHeight - 100.0f);
+
+    wanderTarget.x = Clamp(wanderTarget.x, 50.0f, screenWidth - 50.0f);
+    wanderTarget.y = Clamp(wanderTarget.y, 50.0f, screenHeight - 50.0f);
   }
 
   // Move towards wander target
   Vector2 directionToTarget = Vector2Subtract(wanderTarget, {x, y});
   float distance = Vector2Length(directionToTarget);
 
-  if (distance > 20.0f)
+  if (distance > 10.0f)
   {
     Vector2 normalizedDirection = Vector2Normalize(directionToTarget);
-    float wanderSpeed = speed * GetRandomValue(40, 70) / 100.0f;
+    float wanderSpeed = speed * GetRandomValue(30, 60) / 100.0f;
 
     x += normalizedDirection.x * wanderSpeed * deltaTime;
     y += normalizedDirection.y * wanderSpeed * deltaTime;
 
     // Update facing direction
-    if (fabsf(normalizedDirection.x) > 0.1f)
+    if (fabsf(normalizedDirection.x) > 0.3f)
     {
       direction = (normalizedDirection.x < 0) ? Direction::LEFT : Direction::RIGHT;
     }
   }
-  else if (wanderTimer > 1.0f)
+  else
   {
-    // Reached target early, set new timer
-    wanderTimer = GetRandomValue(5, 15) / 10.0f;
+    if (GetRandomValue(0, 100) < 30)
+    {
+      SetState(BotState::IDLE);
+    }
+    else
+    {
+      wanderTimer = 0.0f;
+    }
   }
 }
 
@@ -378,6 +400,10 @@ void Bot::SetState(BotState newState)
     if (newState == BotState::WANDERING)
     {
       wanderTimer = 0.0f;
+    }
+    else if (newState == BotState::IDLE)
+    {
+      idleTime = GetRandomValue(10, 40) / 10.0f;
     }
   }
 }
@@ -457,47 +483,53 @@ void Bot::UpdateAnimations()
 
 void Bot::GetTextureAndAnimation(Texture2D &texture, Rectangle &source)
 {
-  const int frameWidth = 128;
-  const int frameHeight = 128;
-
+  Texture2D *currentTexture = nullptr;
+  Animation *currentAnim = nullptr;
   switch (state)
   {
   case BotState::IDLE:
     if (direction == Direction::RIGHT)
     {
-      texture = idleTexture;
-      source = animation_frame(&idleRightAnim, frameWidth, frameHeight);
+      currentTexture = &idleTexture;
+      currentAnim = &idleRightAnim;
     }
     else
     {
-      texture = idleLeftTexture;
-      source = animation_frame(&idleLeftAnim, frameWidth, frameHeight);
-      source.x += frameWidth;     // Shift x before flipping
-      source.width = -frameWidth; // Flip horizontally
+      currentTexture = &idleLeftTexture;
+      currentAnim = &idleLeftAnim;
     }
     break;
 
   case BotState::WANDERING:
   case BotState::CHASING:
   case BotState::FLEEING:
-    texture = walkTexture;
-    source = animation_frame(&walkAnim, frameWidth, frameHeight);
-    if (direction == Direction::LEFT)
-    {
-      source.x += frameWidth;
-      source.width = -frameWidth;
-    }
+    currentTexture = &walkTexture;
+    currentAnim = &walkAnim;
     break;
 
   case BotState::ATTACK:
-    texture = attackTexture;
-    source = animation_frame(&attackAnim, frameWidth, frameHeight);
-    if (direction == Direction::LEFT)
-    {
-      source.x += frameWidth;
-      source.width = -frameWidth;
-    }
+    currentTexture = &attackTexture;
+    currentAnim = &attackAnim;
     break;
+  default:
+
+    currentTexture = &idleTexture;
+    currentAnim = &idleRightAnim;
+    break;
+  }
+  texture = *currentTexture;
+
+  // Calculate frame dimensions dynamically from texture and animation
+  int totalFrames = currentAnim->last - currentAnim->first + 1;
+  int frameWidth = texture.width / totalFrames;
+  int frameHeight = texture.height;
+
+  source = animation_frame(currentAnim, frameWidth, frameHeight);
+
+  if (direction == Direction::LEFT && state != BotState::IDLE)
+  {
+    source.width = -frameWidth;
+    source.x += frameWidth;
   }
 }
 

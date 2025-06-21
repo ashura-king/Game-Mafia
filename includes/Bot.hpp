@@ -35,6 +35,7 @@ private:
   BotState state;
   BotState previousState;
   float stateTimer;
+  float idleTime = 2.0f;
 
   // AI behavior parameters
   float chaseRange;
