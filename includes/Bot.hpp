@@ -1,48 +1,48 @@
-#ifndef BOT_H
-#define BOT_H
+#ifndef BOT_HPP
+#define BOT_HPP
 
 #include <raylib.h>
 #include "GameType.hpp"
 #include <vector>
-#include <string>
 
 class Bot
 {
 private:
-  // Textures and animations
+  // Bot configuration
+  BotType type;
+
+  // Graphics resources
   Texture2D idleTexture;
   Texture2D idleLeftTexture;
   Texture2D walkTexture;
   Texture2D runTexture;
   Texture2D attackTexture;
 
+  // Animation states
   Animation idleRightAnim;
   Animation idleLeftAnim;
   Animation walkAnim;
   Animation runAnim;
   Animation attackAnim;
 
-  // Position and movement
+  // Transform properties
   float x, y;
   float width, height;
   float speed;
   Direction direction;
 
-  // AI state management
+  // AI state system
   BotState state;
   BotState previousState;
   float stateTimer;
 
-  // AI behavior parameters - using your values
-  float chaseRange = 200.0f;
-  float attackRange = 80.0f;
-  float fleeingRange = 400.0f;
-  float wanderTime = 3.0f;
-  float moveTime = 3.0f;
-  float patrolStartX = 100.0f;
-  float PatrolStartY = 600.0f;
+  // AI behavior parameters
+  float chaseRange;
+  float attackRange;
+  float fleeingRange;
+  float wanderTime;
 
-  Vector2 targetPosition;
+  // Wandering behavior
   Vector2 wanderTarget;
   float wanderTimer;
 
@@ -51,57 +51,45 @@ private:
   int currentWaypointIndex;
   float waypointReachDistance;
 
-  // Combat
+  // Combat system
   bool isAttacking;
   float attackTimer;
   float attackCooldown;
   int health;
   int maxHealth;
 
-  // Utility
+  // Initialization state
   bool isLoaded;
 
-public:
-  // Constructor
-  Bot(const std::string &idleRightPath,
-      const std::string &idleLeftPath,
-      const std::string &walkPath,
-      const std::string &runPath,
-      const std::string &attackPath,
-      float startX,
-      float startY,
-      float botSpeed = 2.0f);
+  // Private helper methods
+  void SetBotProperties(BotType botType);
+  void UpdateAnimations();
+  void GetTextureAndAnimation(Texture2D &texture, Rectangle &source);
 
-  // Destructor
+public:
+  // Constructor & Destructor
+  Bot(BotType botType, float startX, float startY);
   ~Bot();
 
-  // Main update functions
+  // Core update loop
   void Update();
   void UpdateAI(Vector2 playerPos, float deltaTime);
   void Draw();
 
-  // AI State methods
+  // State management
   void SetState(BotState newState);
   BotState GetState() const { return state; }
 
-  // AI Behaviors - using your method names
-  void UpdateIdle();
-  void UpdateWandering();
+  // AI behaviors
   void chasePlayer(Vector2 playerPos);
   void wander(float deltaTime);
   void Patrol();
-  void UpdateFleeing(Vector2 threatPosition);
 
-  // Movement methods
+  // Movement system
   void MoveTowards(Vector2 target);
   void MoveAway(Vector2 threat);
-  void StopMoving();
 
-  // Patrol system
-  void SetPatrolWaypoints(const std::vector<Vector2> &waypoints);
-  void UpdatePatrol();
-
-  // Combat
+  // Combat system
   void Attack();
   bool CanAttack() const;
   void TakeDamage(int damage);
@@ -111,13 +99,13 @@ public:
   float DistanceTo(Vector2 target) const;
   bool IsPlayerInRange(Vector2 playerPosition, float range) const;
   bool CheckCollisionWithPlayer(Vector2 playerPos, float playerWidth, float playerHeight);
+
+  // Getters
   Vector2 GetPosition() const { return {x, y}; }
   Rectangle GetBounds() const { return {x, y, width, height}; }
-
-  // Animation helpers
-  void UpdateAnimations();
-  CharacterState GetCurrentCharacterState() const;
-  void GetTextureAndAnimation(Texture2D &texture, Rectangle &source);
+  BotType GetType() const { return type; }
+  int GetHealth() const { return health; }
+  int GetMaxHealth() const { return maxHealth; }
 };
 
 #endif

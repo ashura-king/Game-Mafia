@@ -28,6 +28,14 @@ enum class CharacterState
   IDLE_LEFT
 };
 
+enum class BotType
+{
+  CIVILIAN,
+  THUG,
+  GANGSTER,
+  POLICE
+
+};
 enum class BotState
 {
   IDLE,

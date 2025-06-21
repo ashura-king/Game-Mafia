@@ -37,25 +37,19 @@ int main()
         (screenWidth - (titleTexture.width * titleScale)) / 2.0f,
         20.0f * scale};
 
-    Character player("resource/Idle.png",
-                     "resource/Idle_2.png",
-                     "resource/Walk.png",
-                     "resource/Run.png",
-                     "resource/Shot.png",
-                     "resource/Jump.png",
-                     "resource/Attack_1.png",
+    Character player("resource/player/Idle.png",
+                     "resource/player/Idle_2.png",
+                     "resource/player/Walk.png",
+                     "resource/player/Run.png",
+                     "resource/player/Shot.png",
+                     "resource/player/Jump.png",
+                     "resource/player/Attack_1.png",
                      "Audio/Gun.mp3",
                      "Audio/Attack.mp3",
-                     "resource/bullet.png",
+                     "resource/player/bullet.png",
                      120.0f, 270.0f, 2.0f);
-    Bot bot("resource/enemyIdle.png",
-            "resource/enemyIdle2.png",
-            "resource/enemyWalk.png",
-            "resource/enemyRun.png",
-            "resource/enemyAttack.png",
-            600.0f,
-            400.0f,
-            3.0f);
+
+    Bot bots(BotType::THUG, 600.0f, 400.0f);
 
     player.SetJumpSpeed(15.0f);
     player.SetGravity(0.8f);
@@ -201,10 +195,14 @@ int main()
             player.Update();
             Vector2 playerPos = {player.GetX(), player.GetY()};
             float deltaTime = GetFrameTime();
-            bot.Update();
-            bot.UpdateAI(playerPos, deltaTime);
 
             float backgroundSpeed = player.GetCurrentMovementSpeed();
+            /*{
+                  gamebot.Update();
+                  gamebot.UpdateAI(playerPos, deltaTime);
+              }*/
+            bots.Update();
+            bots.UpdateAI(playerPos, deltaTime);
 
             for (Gamelayer *main : mainlayers)
                 main->UpdateLayer(backgroundSpeed);
@@ -224,7 +222,12 @@ int main()
 
             for (Gamelayer *main : mainlayers)
                 main->Drawlayer();
-            bot.Draw();
+
+            /*for (auto &gamebots : bots)
+            {
+                gamebots.Draw();
+            }*/
+            bots.Draw();
             player.Draw();
 
             EndDrawing();

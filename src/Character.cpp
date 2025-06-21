@@ -109,7 +109,6 @@ Character::Character(const std::string &idlePath,
     runTexture = {0};
   }
 
-  // Load optional shot texture
   if (!shot.empty())
   {
     shotTexture = LoadTexture(shot.c_str());
@@ -123,7 +122,6 @@ Character::Character(const std::string &idlePath,
     shotTexture = {0};
   }
 
-  // Load optional jump texture
   if (!jump.empty())
   {
     jumpTexture = LoadTexture(jump.c_str());
@@ -149,7 +147,7 @@ Character::Character(const std::string &idlePath,
   {
     bulletTexture = {0};
   }
-  // Load optional gunshot sound
+
   if (!gunshotSoundPath.empty())
   {
     gunshotSound = LoadSound(gunshotSoundPath.c_str());
