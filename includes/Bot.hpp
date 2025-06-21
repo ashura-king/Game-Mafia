@@ -59,6 +59,11 @@ private:
   int health;
   int maxHealth;
 
+  // Bot spawning system
+  float spawnDelay;
+  float spawnTimer;
+  bool isSpawned;
+
   // Initialization state
   bool isLoaded;
 
@@ -67,6 +72,10 @@ private:
   void UpdateAnimations();
   void GetTextureAndAnimation(Texture2D &texture, Rectangle &source);
 
+  // Collision avoidance methods
+  bool WouldCollideWithBots(Vector2 position, const std::vector<Bot *> &otherBots) const;
+  Vector2 GetAvoidanceDirection(Vector2 blockedPosition, const std::vector<Bot *> &otherBots) const;
+
 public:
   // Constructor & Destructor
   Bot(BotType botType, float startX, float startY);
@@ -74,16 +83,16 @@ public:
 
   // Core update loop
   void Update();
-  void UpdateAI(Vector2 playerPos, float deltaTime);
+  void UpdateAI(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots = {});
   void Draw();
 
   // State management
   void SetState(BotState newState);
   BotState GetState() const { return state; }
 
-  // AI behaviors
-  void chasePlayer(Vector2 playerPos);
-  void wander(float deltaTime);
+  // AI behaviors - FIXED METHOD NAMES TO MATCH CPP FILE
+  void ChasePlayer(Vector2 playerPos, const std::vector<Bot *> &otherBots = {});
+  void Wander(float deltaTime, const std::vector<Bot *> &otherBots = {});
   void Patrol();
 
   // Movement system
@@ -100,6 +109,12 @@ public:
   float DistanceTo(Vector2 target) const;
   bool IsPlayerInRange(Vector2 playerPosition, float range) const;
   bool CheckCollisionWithPlayer(Vector2 playerPos, float playerWidth, float playerHeight);
+
+  // Spawn control methods
+  void SetSpawned(bool spawned) { isSpawned = spawned; }
+  bool IsSpawned() const { return isSpawned; }
+  float GetSpawnTimer() const { return spawnTimer; }
+  float GetSpawnDelay() const { return spawnDelay; }
 
   // Getters
   Vector2 GetPosition() const { return {x, y}; }
