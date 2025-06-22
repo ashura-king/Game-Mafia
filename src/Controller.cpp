@@ -1,5 +1,9 @@
 #include "includes/Controller.hpp"
+#include "includes/Civillian.hpp"
+#include "includes/Swat.hpp"
+#include "includes/ThugBot.hpp"
 #include <raylib.h>
+
 Controller::Controller()
 {
   startButton = nullptr;
@@ -7,6 +11,7 @@ Controller::Controller()
   yesButton = nullptr;
   noButton = nullptr;
 }
+
 void Controller::Init(int screenW, int screenH, int originalW, int originalH)
 {
   InitAudioDevice();
@@ -99,18 +104,52 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   popup = Popup();
 
   PlayMusicStream(backgroundMusic);
-  SpawnBots(10);
+
+  // Initialize bots when entering playing state
+  // SpawnBots(4); // Comment this out for now, spawn when game starts
 }
 
 void Controller::SpawnBots(int count)
 {
+  // Clear existing bots
+  for (Bot *bot : bots)
+  {
+    delete bot;
+  }
   bots.clear();
+
   for (int i = 0; i < count; ++i)
   {
     float x = GetRandomValue(100, GetScreenWidth() - 300);
     float y = GetRandomValue(100, GetScreenHeight() - 300);
-    BotType type = static_cast<BotType>(GetRandomValue(0, 3));
-    bots.emplace_back(type, x, y);
+
+    // Random bot type selection
+    BotType type = static_cast<BotType>(GetRandomValue(0, 2)); // 0=CIVILIAN, 1=SWAT, 2=THUG
+
+    Bot *newBot = nullptr;
+
+    switch (type)
+    {
+    case BotType::CIVILIAN:
+      newBot = new CivilianBot(x, y);
+      break;
+    case BotType::SWAT:
+      newBot = new SwatBot(x, y);
+      break;
+    case BotType::THUG:
+      newBot = new ThugBot(x, y);
+      break;
+    default:
+      newBot = new ThugBot(x, y); // Default fallback
+      break;
+    }
+
+    if (newBot)
+    {
+      newBot->LoadTextures();
+      newBot->SetProperties();
+      bots.push_back(newBot);
+    }
   }
 }
 
@@ -202,6 +241,7 @@ void Controller::UpdateGame()
     if (gameTimer >= fadeDuration)
     {
       fadeOutComplete = true;
+      SpawnBots(4); // Spawn bots when transitioning to playing state
       currentState = Gamestate::PLAYING;
     }
   }
@@ -219,11 +259,43 @@ void Controller::UpdatePlaying()
   for (Gamelayer *main : mainlayers)
     main->UpdateLayer(backgroundSpeed);
 
-  for (Bot &bot : bots)
+  // Update all bots with proper AI
+  for (Bot *bot : bots)
   {
-    bot.Update();
-    bot.UpdateAI(playerPos, deltaTime);
+    if (bot && bot->IsAlive())
+    {
+      bot->Update();
+      bot->UpdateAI(playerPos, deltaTime, bots);
+
+      // Check collision with player for damage/interaction
+      if (bot->CheckCollisionWithPlayer(playerPos, player->GetWidth(), player->GetHeight()))
+      {
+        // Handle collision based on bot type
+        if (bot->GetBotType() == BotType::THUG || bot->GetBotType() == BotType::SWAT)
+        {
+          if (bot->CanAttack())
+          {
+            bot->Attack();
+            // Apply damage to player here if needed
+            // player->TakeDamage(bot->GetAttackDamage());
+          }
+        }
+      }
+    }
   }
+
+  // Remove dead bots
+  bots.erase(std::remove_if(bots.begin(), bots.end(),
+                            [](Bot *bot)
+                            {
+                              if (!bot->IsAlive())
+                              {
+                                delete bot;
+                                return true;
+                              }
+                              return false;
+                            }),
+             bots.end());
 
   if (!playingMusicStarted)
   {
@@ -269,8 +341,14 @@ void Controller::DrawPlaying()
   for (Gamelayer *main : mainlayers)
     main->Drawlayer();
 
-  for (Bot &bot : bots)
-    bot.Draw();
+  // Draw all bots
+  for (Bot *bot : bots)
+  {
+    if (bot && bot->IsAlive())
+    {
+      bot->Draw();
+    }
+  }
 
   player->Draw();
 }
@@ -288,6 +366,14 @@ void Controller::Unload()
   for (Gamelayer *main : mainlayers)
     delete main;
   mainlayers.clear();
+
+  // Clean up bots
+  for (Bot *bot : bots)
+  {
+    delete bot;
+  }
+  bots.clear();
+
   delete player;
   player = nullptr;
 
