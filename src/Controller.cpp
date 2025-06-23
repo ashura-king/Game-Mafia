@@ -31,7 +31,7 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   clickSound = LoadSound("Audio/start.mp3");
   backgroundMusic = LoadMusicStream("Audio/Intro1.mp3");
   playingMusic = LoadMusicStream("Audio/PlayingSound.mp3");
-  titleTexture = LoadTexture("resource/TitleGame.png");
+  titleTexture = LoadTexture("resource/texture/TitleGame.png");
   titleScale = scale * 3.0f;
   titlePosition = {(screenWidth - (titleTexture.width * titleScale)) / 2.0f, 20.0f * scale};
 
@@ -55,39 +55,39 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
 
   // Menu Layers
   menuLayers = {
-      new Layer("resource/Sky_pale.png", 0.1f, 0, scale),
-      new Layer("resource/back.png", 0.5f, 0, scale),
-      new Layer("resource/Houses3_pale.png", 1.0f, 70, scale),
-      new Layer("resource/houses1.png", 1.0f, 70, scale),
-      new Layer("resource/minishop&callbox.png", 1.0f, 80, scale),
-      new Layer("resource/road&lamps.png", 1.0f, 75, scale)};
+      new Layer("resource/texture/Sky_pale.png", 0.1f, 0, scale),
+      new Layer("resource/texture/back.png", 0.5f, 0, scale),
+      new Layer("resource/texture/Houses3_pale.png", 1.0f, 70, scale),
+      new Layer("resource/texture/houses1.png", 1.0f, 70, scale),
+      new Layer("resource/texture/minishop&callbox.png", 1.0f, 80, scale),
+      new Layer("resource/texture/road&lamps.png", 1.0f, 75, scale)};
 
   // Game Layers
   gameLayers = {
-      new Layer("resource/sky.png", 0.1f, 0, scale),
-      new Layer("resource/houses3.png", 0.5f, 0, scale),
-      new Layer("resource/night2.png", 1.0f, 70, scale),
-      new Layer("resource/night.png", 1.0f, 75, scale),
-      new Layer("resource/road.png", 1.0f, 75, scale),
-      new Layer("resource/crosswalk.png", 1.0f, 70, scale)};
+      new Layer("resource/texture/sky.png", 0.1f, 0, scale),
+      new Layer("resource/texture/houses3.png", 0.5f, 0, scale),
+      new Layer("resource/texture/night2.png", 1.0f, 70, scale),
+      new Layer("resource/texture/night.png", 1.0f, 75, scale),
+      new Layer("resource/texture/road.png", 1.0f, 75, scale),
+      new Layer("resource/texture/crosswalk.png", 1.0f, 70, scale)};
 
   // Main Game Layers
   mainlayers = {
-      new Gamelayer("resource/mainsky.png", 0.0f, scale),
-      new Gamelayer("resource/housemain2.png", 0.0f, scale),
-      new Gamelayer("resource/housemain.png", 0.0f, scale),
-      new Gamelayer("resource/housemain1.png", 0.0f, scale),
-      new Gamelayer("resource/fountain&bush.png", 0.0f, scale),
-      new Gamelayer("resource/policebox.png", 0.0f, scale),
-      new Gamelayer("resource/mainroad.png", 0.0f, scale)};
+      new Gamelayer("resource/texture/mainsky.png", 0.0f, scale),
+      new Gamelayer("resource/texture/housemain2.png", 0.0f, scale),
+      new Gamelayer("resource/texture/housemain.png", 0.0f, scale),
+      new Gamelayer("resource/texture/housemain1.png", 0.0f, scale),
+      new Gamelayer("resource/texture/fountain&bush.png", 0.0f, scale),
+      new Gamelayer("resource/texture/policebox.png", 0.0f, scale),
+      new Gamelayer("resource/texture/mainroad.png", 0.0f, scale)};
 
   // Buttons
-  startButton = new Button("resource/button1.png", "resource/button2.png", "resource/button3.png", scale * 5.0f, true, 70.0f);
-  exitButton = new Button("resource/exit1.png", "resource/exit2.png", "resource/exit3.png", scale * 5.0f, true, 160.0f);
-  yesButton = new Button("resource/yes.png", "resource/yes2.png", "resource/yes3.png", 2.5f);
-  noButton = new Button("resource/no.png", "resource/no2.png", "resource/no3.png", 2.5f);
+  startButton = new Button("resource/texture/button1.png", "resource/texture/button2.png", "resource/texture/button3.png", scale * 5.0f, true, 70.0f);
+  exitButton = new Button("resource/texture/exit1.png", "resource/texture/exit2.png", "resource/texture/exit3.png", scale * 5.0f, true, 160.0f);
+  yesButton = new Button("resource/texture/yes.png", "resource/texture/yes2.png", "resource/texture/yes3.png", 2.5f);
+  noButton = new Button("resource/texture/no.png", "resource/texture/no2.png", "resource/texture/no3.png", 2.5f);
 
-  settingIcon = new SettingMenu("resource/gear.png", "resource/gearHover.png", "resource/gearClick.png", 1.0f, true, true);
+  settingIcon = new SettingMenu("resource/texture/gear.png", "resource/texture/gearHover.png", "resource/texture/gearClick.png", 1.0f, true, true);
   resumeButton = new Button("resource/texture/resume1.png",
                             "resource/texture/resume2.png",
                             "resource/texture/resume3.png",
@@ -350,13 +350,10 @@ void Controller::UpdatePlaying()
   // Update bot AI and interactions
   UpdateBotAI(playerPos, deltaTime);
 
-  // Handle bot-player interactions
   HandleBotPlayerInteractions(playerPos);
 
-  // Handle bot-bot interactions
   HandleBotInteractions();
 
-  // Clean up dead bots and respawn if needed
   CleanupAndRespawnBots();
 
   // Update music
