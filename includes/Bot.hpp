@@ -56,12 +56,25 @@ public:
   void GetTextureAndAnimation(Texture2D &texture, Rectangle &source);
   void UpdateDirection(Vector2 movementVector);
 
+  // E-SWAT Tactical System Methods
+  virtual void ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
+  void AssignESWATRole(const std::vector<Bot *> &allBots, Vector2 playerPos);
+  Vector2 GetESWATPosition(Vector2 playerPos, const std::vector<Bot *> &allBots);
+  bool CheckESWATCoordination(const std::vector<Bot *> &allBots);
+  void ExecutePositioning(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
+  void ExecuteCoordinatedAttack(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
+  void ExecuteRetreatRegroup(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
+  void CircleStrikePlayer(Vector2 playerPos, float deltaTime);
+
   // Public properties (you may later wrap these in getters/setters)
   float x, y;
   float width, height;
   float speed;
   Direction direction;
   int health, maxHealth;
+  Vector2 GetPosition() const { return {x, y}; };
+  bool IsInPosition() const { return isInPosition; };
+  bool isInPosition;
 
 protected:
   // Texture resources (to be loaded in LoadTextures)
@@ -116,6 +129,25 @@ protected:
 
   // Bot identity
   BotType type;
+
+  // E-SWAT Tactical System Variables
+  TacticalRole tacticalRole;
+  TacticalPhase tacticalPhase;
+  Vector2 tacticalTarget;
+  Vector2 circleCenter;
+  float circleRadius;
+  float circleAngle;
+  float tacticalTimer;
+  bool waitingForSignal;
+  int groupId;
+  static int nextGroupId;
+
+  // E-SWAT Constants
+  static constexpr float ESWAT_CIRCLE_RADIUS = 200.0f;
+  static constexpr float ESWAT_ATTACK_DISTANCE = 80.0f;
+  static constexpr float ESWAT_POSITIONING_SPEED = 1.3f;
+  static constexpr float ESWAT_ATTACK_SPEED = 1.8f;
+  static constexpr float ESWAT_COORDINATION_TIME = 2.0f;
 
 private:
   void LoadTexturesSafe();

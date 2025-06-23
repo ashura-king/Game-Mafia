@@ -32,8 +32,7 @@ enum class BotType
 {
   CIVILIAN,
   THUG,
-  GANGSTER,
-  SWAT
+  SWAT,
 
 };
 enum class BotState
@@ -41,15 +40,36 @@ enum class BotState
   IDLE,
   WANDERING,
   CHASING,
-  FLEEING,
   ATTACK,
-  PATROL
+  FLEEING,
+  DEAD,
+  SPAWNING,
+  PATROLLING,
+  TACTICAL_POSITIONING,
+  COORDINATED_ATTACK,
+  RETREATING
+};
+enum class TacticalRole
+{
+  DIRECT_ASSAULT, // Attacks head-on like E-SWAT front units
+  LEFT_FLANKER,   // Circles to attack from left
+  RIGHT_FLANKER,  // Circles to attack from right
+  REAR_AMBUSH,    // Moves behind for surprise attack
+  SUPPORT_FIRE    // Provides covering fire from distance
 };
 
+enum class TacticalPhase
+{
+  POSITIONING,        // Moving to tactical position
+  COORDINATED_ATTACK, // Synchronized attack phase
+  RETREAT_REGROUP
+};
 enum Direction
 {
   LEFT = -1,
-  RIGHT = 1
+  RIGHT = 1,
+  UP,
+  DOWN
 };
 
 struct Animation

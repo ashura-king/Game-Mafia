@@ -73,6 +73,7 @@
     "algorithm": "cpp",
     "utility": "cpp",
     "xutility": "cpp",
-    "xstring": "cpp"
+    "xstring": "cpp",
+    "cmath": "cpp"
   }
 }

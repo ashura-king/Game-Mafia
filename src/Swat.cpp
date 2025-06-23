@@ -1,128 +1,85 @@
 #include "includes/Swat.hpp"
-#include "raylib.h"
 #include <algorithm>
 
 SwatBot::SwatBot(float startX, float startY) : Bot(startX, startY)
 {
-  LoadTextures();
+  type = BotType::SWAT;
   SetProperties();
-  isLoaded = true;
 }
 
 void SwatBot::LoadTextures()
 {
-  // Load SWAT/Police-specific sprites
-  idleTexture = LoadTexture("resource/police/policeIdle.png");
-  idleLeftTexture = LoadTexture("resource/police/policeIdle.png");
-  walkTexture = LoadTexture("resource/police/policeWalk.png");
-  runTexture = LoadTexture("resource/police/policeRun.png");
-  attackTexture = LoadTexture("resource/police/policeAttack.png");
+  // Load SWAT-specific textures
+  // idleTexture = LoadTexture("assets/swat/idle.png");
+  // walkTexture = LoadTexture("assets/swat/walk.png");
+  // runTexture = LoadTexture("assets/swat/run.png");
+  // attackTexture = LoadTexture("assets/swat/attack.png");
 
-  // Validate textures
-  if (idleTexture.id == 0)
-    TraceLog(LOG_WARNING, "Failed to load SWAT idle texture");
-  if (walkTexture.id == 0)
-    TraceLog(LOG_WARNING, "Failed to load SWAT walk texture");
-  if (runTexture.id == 0)
-    TraceLog(LOG_WARNING, "Failed to load SWAT run texture");
-  if (attackTexture.id == 0)
-    TraceLog(LOG_WARNING, "Failed to load SWAT attack texture");
+  isLoaded = true;
 }
 
 void SwatBot::SetProperties()
 {
-  // Initialize animations
-  idleRightAnim = {0, 7, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
-  idleLeftAnim = {0, 7, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
-  walkAnim = {0, 9, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
-  runAnim = {0, 9, 0, 0.1f, 0.1f, 1, AnimationType::REPEATING};
-  attackAnim = {0, 5, 0, 0.1f, 0.1f, 1, AnimationType::ONESHOT};
-
-  // SWAT properties - balanced and disciplined
-  speed = 100.0f;
+  // SWAT-specific properties - more professional and coordinated
+  speed = 110.0f;
   health = 120;
   maxHealth = 120;
-  attackRange = 130.0f;
-  chaseRange = 400.0f;
-  fleeingRange = 300.0f;
-  attackCooldown = 0.5f;
-  wanderTime = 6.0f;
-  spawnDelay = 15.0f;
 
-  // Transform
-  width = 256.0f;
-  height = 256.0f;
-  direction = Direction::RIGHT;
+  chaseRange = 250.0f;
+  attackRange = 60.0f;
+  fleeingRange = 200.0f;
+  wanderTime = 4.0f;
 
-  // State
-  state = BotState::IDLE;
-  previousState = BotState::IDLE;
-  stateTimer = 0.0f;
+  attackCooldown = 0.6f;
+  spawnDelay = 1.0f;
 
-  // Initialize other variables
-  wanderTarget = {0.0f, 0.0f};
-  wanderTimer = 0.0f;
+  // Initialize patrol waypoints
   currentWaypointIndex = 0;
-  waypointReachDistance = 50.0f;
-  isAttacking = false;
-  attackTimer = 0.0f;
-  spawnTimer = 0.0f;
-  isSpawned = false;
-  lastValidDirection = {1.0f, 0.0f};
-  directionChangeTimer = 0.0f;
+  waypointReachDistance = 25.0f;
+
+  // Set up patrol points (example - adjust based on your map)
+  patrolWaypoints.push_back({x - 100, y});
+  patrolWaypoints.push_back({x + 100, y});
+  patrolWaypoints.push_back({x, y - 100});
+  patrolWaypoints.push_back({x, y + 100});
 }
 
 void SwatBot::UpdateAI(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots)
 {
-  // Don't update AI if not spawned yet or not alive
   if (!isSpawned || !IsAlive())
     return;
 
   float distanceToPlayer = Vector2Distance({x, y}, playerPos);
   stateTimer += deltaTime;
 
-  // SWAT coordination bonus when near other SWAT
   float effectiveChaseRange = chaseRange;
-  float effectiveAttackRange = attackRange;
-
   if (IsNearOtherSwat(otherBots))
   {
     effectiveChaseRange *= SWAT_COORDINATION_BONUS;
-    effectiveAttackRange *= 1.1f;
   }
 
-  // Priority 1: Attack if in range
-  if (distanceToPlayer < effectiveAttackRange && CanAttack())
-  {
-    SetState(BotState::ATTACK);
-    Attack();
-  }
-  // Priority 2: Coordinated chasing
-  else if (distanceToPlayer < effectiveChaseRange && distanceToPlayer > effectiveAttackRange)
+  // SWAT always uses professional E-SWAT tactics when engaging
+  if (distanceToPlayer < effectiveChaseRange)
   {
     SetState(BotState::CHASING);
-    ChasePlayer(playerPos, otherBots);
-    MaintainFormation(otherBots); // SWAT-specific formation behavior
+    ExecuteProfessionalTactics(playerPos, deltaTime, otherBots);
   }
-  // Priority 3: Strategic retreat when outnumbered or low health
   else if (distanceToPlayer < fleeingRange &&
-           (health < maxHealth * 0.4f || !IsNearOtherSwat(otherBots)))
+           (health < maxHealth * SWAT_MIN_HEALTH_THRESHOLD || !IsNearOtherSwat(otherBots)))
   {
     SetState(BotState::FLEEING);
     MoveAway(playerPos);
   }
-  // Priority 4: Disciplined patrolling
-  else if (state == BotState::IDLE || state == BotState::WANDERING)
+  else
   {
+    // Professional patrol behavior
     if (state == BotState::IDLE && stateTimer >= wanderTime)
     {
-      SetState(BotState::WANDERING);
+      SetState(BotState::PATROLLING);
       wanderTimer = 0.0f;
     }
-
-    if (state == BotState::WANDERING)
+    if (state == BotState::PATROLLING)
     {
-      // SWAT units prefer patrolling in formation
       if (!patrolWaypoints.empty())
       {
         Patrol();
@@ -131,83 +88,283 @@ void SwatBot::UpdateAI(Vector2 playerPos, float deltaTime, const std::vector<Bot
       {
         Wander(deltaTime, otherBots);
       }
-
       if (stateTimer >= wanderTime * 2.0f)
       {
         SetState(BotState::IDLE);
       }
     }
   }
-  else
-  {
-    SetState(BotState::IDLE);
-  }
 }
 
 void SwatBot::Attack()
 {
-  if (CanAttack())
-  {
-    isAttacking = true;
-    attackTimer = attackCooldown;
-    attackAnim.curr = attackAnim.first;
-    attackAnim.duration_left = attackAnim.speed;
+  if (!CanAttack())
+    return;
 
-    // SWAT units have precise, coordinated attacks
-    TraceLog(LOG_INFO, "SWAT bot executing tactical strike!");
+  // SWAT uses more precise, professional attacks
+  SetState(BotState::ATTACK);
+  attackTimer = GetTime();
+
+  // Add SWAT-specific attack logic here
+  // For example: more accurate shots, coordinated timing, etc.
+
+  // Call parent attack method for basic functionality
+  Bot::Attack();
+}
+
+void SwatBot::ExecuteProfessionalTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots)
+{
+  // SWAT uses enhanced E-SWAT tactics with better coordination
+  ExecuteESWATTactics(playerPos, deltaTime, otherBots);
+  MaintainFormation(otherBots);
+}
+
+void SwatBot::ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots)
+{
+  // Enhanced E-SWAT tactics with professional SWAT coordination
+  tacticalTimer += deltaTime;
+
+  AssignESWATRole(allBots, playerPos);
+  tacticalTarget = GetESWATPosition(playerPos, allBots);
+
+  switch (tacticalPhase)
+  {
+  case TacticalPhase::POSITIONING:
+    ExecuteAdvancedPositioning(playerPos, deltaTime, allBots);
+    break;
+
+  case TacticalPhase::COORDINATED_ATTACK:
+    ExecuteCoordinatedAssault(playerPos, deltaTime, allBots);
+    break;
+
+  case TacticalPhase::RETREAT_REGROUP:
+    ExecuteTacticalRetreat(playerPos, deltaTime, allBots);
+    break;
+  }
+}
+
+void SwatBot::ExecuteAdvancedPositioning(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots)
+{
+  float distanceToTarget = Vector2Distance({x, y}, tacticalTarget);
+  isInPosition = (distanceToTarget < 40.0f); // More precise than thugs
+
+  if (!isInPosition)
+  {
+    Vector2 direction = Vector2Normalize(Vector2Subtract(tacticalTarget, {x, y}));
+    float positioningSpeed = speed * ESWAT_POSITIONING_SPEED;
+
+    // SWAT maintains formation while moving
+    Vector2 formationAdjustment = {0, 0};
+    for (const Bot *other : allBots)
+    {
+      if (other != this && other->IsAlive() && other->IsSpawned() &&
+          other->GetBotType() == BotType::SWAT)
+      {
+        float distance = Vector2Distance({x, y}, {other->x, other->y});
+        if (distance < SWAT_FORMATION_DISTANCE && distance > 0)
+        {
+          Vector2 separation = Vector2Normalize(Vector2Subtract({x, y}, {other->x, other->y}));
+          formationAdjustment = Vector2Add(formationAdjustment,
+                                           Vector2Scale(separation, 0.3f));
+        }
+      }
+    }
+
+    direction = Vector2Normalize(Vector2Add(direction, formationAdjustment));
+
+    x += direction.x * positioningSpeed * deltaTime;
+    y += direction.y * positioningSpeed * deltaTime;
+
+    UpdateDirection(direction);
+    SetState(BotState::TACTICAL_POSITIONING);
+  }
+  else
+  {
+    waitingForSignal = true;
+
+    // SWAT waits for proper coordination
+    if (CheckESWATCoordination(allBots) && tacticalTimer > 1.2f)
+    {
+      tacticalPhase = TacticalPhase::COORDINATED_ATTACK;
+      tacticalTimer = 0.0f;
+    }
+  }
+}
+
+void SwatBot::ExecuteCoordinatedAssault(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots)
+{
+  float distanceToPlayer = Vector2Distance({x, y}, playerPos);
+  SetState(BotState::COORDINATED_ATTACK);
+
+  // Professional SWAT assault patterns
+  switch (tacticalRole)
+  {
+  case TacticalRole::DIRECT_ASSAULT:
+    // Controlled advance
+    if (distanceToPlayer > attackRange)
+    {
+      Vector2 chargeDir = Vector2Normalize(Vector2Subtract(playerPos, {x, y}));
+      float chargeSpeed = speed * ESWAT_ATTACK_SPEED;
+
+      // Maintain formation spacing
+      Vector2 nextPos = {x + chargeDir.x * chargeSpeed * deltaTime,
+                         y + chargeDir.y * chargeSpeed * deltaTime};
+
+      if (!WouldCollideWithBots(nextPos, allBots))
+      {
+        x = nextPos.x;
+        y = nextPos.y;
+        UpdateDirection(chargeDir);
+      }
+    }
+    else if (CanAttack())
+    {
+      Attack();
+    }
+    break;
+
+  case TacticalRole::LEFT_FLANKER:
+  case TacticalRole::RIGHT_FLANKER:
+    // Precise flanking maneuvers
+    CircleStrikePlayer(playerPos, deltaTime);
+    break;
+
+  case TacticalRole::REAR_AMBUSH:
+    // Coordinated ambush
+    if (distanceToPlayer > attackRange)
+    {
+      Vector2 ambushDir = Vector2Normalize(Vector2Subtract(playerPos, {x, y}));
+      float ambushSpeed = speed * ESWAT_ATTACK_SPEED;
+      x += ambushDir.x * ambushSpeed * deltaTime;
+      y += ambushDir.y * ambushSpeed * deltaTime;
+      UpdateDirection(ambushDir);
+    }
+    else if (CanAttack())
+    {
+      Attack();
+    }
+    break;
+
+  case TacticalRole::SUPPORT_FIRE:
+    // Maintain optimal range
+    if (distanceToPlayer < circleRadius)
+    {
+      Vector2 retreatDir = Vector2Normalize(Vector2Subtract({x, y}, playerPos));
+      x += retreatDir.x * speed * 0.8f * deltaTime;
+      y += retreatDir.y * speed * 0.8f * deltaTime;
+    }
+    else if (distanceToPlayer > circleRadius * 1.3f)
+    {
+      Vector2 approachDir = Vector2Normalize(Vector2Subtract(playerPos, {x, y}));
+      x += approachDir.x * speed * 0.6f * deltaTime;
+      y += approachDir.y * speed * 0.6f * deltaTime;
+    }
+    else if (CanAttack())
+    {
+      Attack();
+    }
+    break;
+  }
+
+  // Professional timing
+  if (tacticalTimer > ESWAT_COORDINATION_TIME || health < maxHealth * SWAT_MIN_HEALTH_THRESHOLD)
+  {
+    tacticalPhase = TacticalPhase::RETREAT_REGROUP;
+    tacticalTimer = 0.0f;
+  }
+}
+
+void SwatBot::ExecuteTacticalRetreat(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots)
+{
+  SetState(BotState::RETREATING);
+
+  // Calculate tactical retreat position
+  Vector2 retreatDir = Vector2Normalize(Vector2Subtract({x, y}, playerPos));
+  Vector2 retreatTarget = Vector2Add({x, y}, Vector2Scale(retreatDir, 150.0f));
+
+  // Move towards retreat position while maintaining formation
+  Vector2 direction = Vector2Normalize(Vector2Subtract(retreatTarget, {x, y}));
+  float retreatSpeed = speed * 0.9f; // Slightly slower retreat for control
+
+  // Apply formation adjustment during retreat
+  Vector2 formationAdjustment = {0, 0};
+  for (const Bot *other : allBots)
+  {
+    if (other != this && other->IsAlive() && other->IsSpawned() &&
+        other->GetBotType() == BotType::SWAT)
+    {
+      float distance = Vector2Distance({x, y}, {other->x, other->y});
+      if (distance < SWAT_FORMATION_DISTANCE && distance > 0)
+      {
+        Vector2 separation = Vector2Normalize(Vector2Subtract({x, y}, {other->x, other->y}));
+        formationAdjustment = Vector2Add(formationAdjustment,
+                                         Vector2Scale(separation, 0.2f));
+      }
+    }
+  }
+
+  direction = Vector2Normalize(Vector2Add(direction, formationAdjustment));
+
+  x += direction.x * retreatSpeed * deltaTime;
+  y += direction.y * retreatSpeed * deltaTime;
+  UpdateDirection(direction);
+
+  // Check if retreat is complete
+  float distanceToPlayer = Vector2Distance({x, y}, playerPos);
+  if (distanceToPlayer > SWAT_TACTICAL_RANGE || tacticalTimer > 3.0f)
+  {
+    // Reset tactical phase and prepare for next engagement
+    tacticalPhase = TacticalPhase::POSITIONING;
+    tacticalTimer = 0.0f;
+    waitingForSignal = false;
+    isInPosition = false;
+
+    // Brief cooldown before re-engaging
+    SetState(BotState::IDLE);
+    stateTimer = 0.0f;
   }
 }
 
 void SwatBot::MaintainFormation(const std::vector<Bot *> &otherBots)
 {
-  // SWAT units try to maintain formation with other SWAT units
-  Vector2 averageSwatPosition = {0.0f, 0.0f};
-  int swatCount = 0;
-
-  for (const Bot *otherBot : otherBots)
+  // SWAT bots maintain professional spacing and formation
+  for (const Bot *other : otherBots)
   {
-    if (otherBot != this && otherBot->IsAlive() && otherBot->IsSpawned() &&
-        otherBot->GetBotType() == BotType::SWAT)
+    if (other != this && other->IsAlive() && other->IsSpawned() &&
+        other->GetBotType() == BotType::SWAT)
     {
-      averageSwatPosition.x += otherBot->x;
-      averageSwatPosition.y += otherBot->y;
-      swatCount++;
-    }
-  }
+      float distance = Vector2Distance({x, y}, {other->x, other->y});
 
-  if (swatCount > 0)
-  {
-    averageSwatPosition.x /= swatCount;
-    averageSwatPosition.y /= swatCount;
+      // Maintain optimal formation distance
+      if (distance < SWAT_FORMATION_DISTANCE * 0.7f)
+      {
+        // Too close - create separation
+        Vector2 separation = Vector2Normalize(Vector2Subtract({x, y}, {other->x, other->y}));
+        float separationForce = (SWAT_FORMATION_DISTANCE * 0.7f - distance) / (SWAT_FORMATION_DISTANCE * 0.7f);
 
-    float distanceToFormation = Vector2Distance({x, y}, averageSwatPosition);
-
-    // If too far from formation, move closer
-    if (distanceToFormation > SWAT_FORMATION_DISTANCE)
-    {
-      Vector2 formationDirection = Vector2Normalize(
-          Vector2Subtract(averageSwatPosition, {x, y}));
-
-      float deltaTime = GetFrameTime();
-      x += formationDirection.x * speed * 0.3f * deltaTime;
-      y += formationDirection.y * speed * 0.3f * deltaTime;
+        x += separation.x * separationForce * 30.0f * GetFrameTime();
+        y += separation.y * separationForce * 30.0f * GetFrameTime();
+      }
     }
   }
 }
 
 bool SwatBot::IsNearOtherSwat(const std::vector<Bot *> &otherBots) const
 {
-  for (const Bot *otherBot : otherBots)
+  int nearbySwatCount = 0;
+
+  for (const Bot *other : otherBots)
   {
-    if (otherBot != this && otherBot->IsAlive() && otherBot->IsSpawned() &&
-        otherBot->GetBotType() == BotType::SWAT)
+    if (other != this && other->IsAlive() && other->IsSpawned() &&
+        other->GetBotType() == BotType::SWAT)
     {
-      float distance = Vector2Distance({x, y}, {otherBot->x, otherBot->y});
-      if (distance < SWAT_FORMATION_DISTANCE * 1.5f)
+      float distance = Vector2Distance({x, y}, {other->x, other->y});
+      if (distance <= SWAT_COORDINATION_BONUS * 100.0f)
       {
-        return true;
+        nearbySwatCount++;
       }
     }
   }
-  return false;
+
+  return nearbySwatCount >= 1; // At least one other SWAT nearby for coordination
 }

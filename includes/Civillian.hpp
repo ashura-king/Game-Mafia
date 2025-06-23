@@ -16,12 +16,17 @@ public:
   void UpdateAI(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots) override;
   void Attack() override; // Civilians can't attack
 
+  // Civilians don't use E-SWAT tactics
+  void ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots) override;
+  bool IsNearDanger(Vector2 playerPos, const std::vector<Bot *> &otherBots) const;
+  void ExecutePanicBehavior(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots);
+
 private:
   // Civilian-specific properties
   static constexpr float CIVILIAN_PANIC_MULTIPLIER = 1.8f;
   static constexpr float CIVILIAN_FLEE_SPEED_BOOST = 1.5f;
+  static constexpr float CIVILIAN_DANGER_DETECTION_RANGE = 250.0f;
 
   // Civilian-specific behavior
   void PanicFlee(Vector2 threat, const std::vector<Bot *> &otherBots);
-  bool IsNearDanger(Vector2 playerPos, const std::vector<Bot *> &otherBots) const;
 };
