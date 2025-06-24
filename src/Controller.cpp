@@ -110,7 +110,6 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
 
   PlayMusicStream(backgroundMusic);
 
-  // Initialize bots when entering playing state
   SpawnBots(4);
 }
 
@@ -145,7 +144,7 @@ void Controller::SpawnBots(int count)
     Vector2 spawnPos = GetSafeSpawnPosition(playerPos, SPAWN_SAFE_DISTANCE);
     Bot *newBot = nullptr;
 
-    // Distribute bot types evenly (3 types now: CIVILIAN, THUG, SWAT)
+    // Distribute bot types evenly (now: CIVILIAN, THUG, GANGSTER)
     int botTypeIndex = i % 3;
 
     switch (botTypeIndex)
@@ -163,9 +162,9 @@ void Controller::SpawnBots(int count)
       }
       break;
     case 2:
-      if (CountBotsByType(BotType::SWAT) < MAX_BOTS_PER_TYPE)
+      if (CountBotsByType(BotType::GANGSTER) < MAX_BOTS_PER_TYPE)
       {
-        newBot = new SwatBot(spawnPos.x, spawnPos.y);
+        newBot = new GangsterBot(spawnPos.x, spawnPos.y);
       }
       break;
     }
@@ -184,18 +183,20 @@ Vector2 Controller::GetSafeSpawnPosition(Vector2 playerPos, float minDistance)
   Vector2 spawnPos;
   int attempts = 0;
   const int maxAttempts = 50;
+  const float GROUND_LEVEL = 470.0f; // Match your player's ground level
 
   do
   {
+    // Only randomize X position, keep Y at ground level
     spawnPos.x = GetRandomValue(100, GetScreenWidth() - 100);
-    spawnPos.y = GetRandomValue(100, GetScreenHeight() - 100);
+    spawnPos.y = GROUND_LEVEL; // Fixed Y position
     attempts++;
 
     if (attempts >= maxAttempts)
     {
-      // Fallback: spawn at screen edges
+      // Fallback: spawn at screen edges horizontally
       spawnPos.x = (GetRandomValue(0, 1) == 0) ? 50 : GetScreenWidth() - 50;
-      spawnPos.y = GetRandomValue(100, GetScreenHeight() - 100);
+      spawnPos.y = GROUND_LEVEL;
       break;
     }
   } while (Vector2Distance(spawnPos, playerPos) < minDistance ||
@@ -210,9 +211,14 @@ bool Controller::IsPositionOccupied(Vector2 position)
 
   for (const Bot *bot : bots)
   {
-    if (bot && Vector2Distance(position, {bot->x, bot->y}) < minBotDistance)
+    if (bot)
     {
-      return true;
+      // Only check horizontal distance
+      float horizontalDistance = fabs(position.x - bot->x);
+      if (horizontalDistance < minBotDistance)
+      {
+        return true;
+      }
     }
   }
   return false;
@@ -332,7 +338,7 @@ void Controller::UpdatePlaying()
 
   if (showSettingsPopup)
   {
-    return; // Don't update game logic while paused
+    return;
   }
 
   // Update player
@@ -431,7 +437,6 @@ void Controller::UpdateBotSpecificBehavior(Bot *bot, Vector2 playerPos,
     if (civilian->IsNearDanger(player->GetPosition(), allBots))
     {
       civilian->ExecutePanicBehavior(player->GetPosition(), GetFrameTime(), bots);
-      AlertNearbySWAT(civilian->GetPosition(), allBots);
     }
     else
     {
@@ -440,41 +445,20 @@ void Controller::UpdateBotSpecificBehavior(Bot *bot, Vector2 playerPos,
     break;
   }
 
-  case BotType::SWAT:
+  case BotType::GANGSTER:
   {
-    SwatBot *swat = static_cast<SwatBot *>(bot);
+    GangsterBot *gang = static_cast<GangsterBot *>(bot);
 
-    // SWAT units coordinate with each other automatically through E-SWAT
-    // You could add radio communication effects here
+    gang->ExecuteESWATTactics(playerPos, deltaTime, allBots);
     break;
   }
 
   case BotType::THUG:
   {
     ThugBot *thug = static_cast<ThugBot *>(bot);
-    // Thugs use pack tactics when grouped
-    // Their aggression affects nearby thugs
+    thug->UpdateAI(player->GetPosition(), GetFrameTime(), bots);
     break;
   }
-  }
-}
-
-void Controller::AlertNearbySWAT(Vector2 alertPosition, const std::vector<Bot *> &allBots)
-{
-  const float ALERT_RANGE = 300.0f;
-
-  for (Bot *bot : allBots)
-  {
-    if (bot->GetBotType() == BotType::SWAT)
-    {
-      float distance = Vector2Distance({bot->x, bot->y}, alertPosition);
-      if (distance <= ALERT_RANGE)
-      {
-        SwatBot *swat = static_cast<SwatBot *>(bot);
-        // Increase SWAT alertness/aggression when civilians are in danger
-        swat->SetState(BotState::CHASING);
-      }
-    }
   }
 }
 
@@ -494,7 +478,7 @@ void Controller::HandleBotPlayerInteractions(Vector2 playerPos)
       switch (bot->GetBotType())
       {
       case BotType::THUG:
-      case BotType::SWAT:
+      case BotType::GANGSTER:
         // Handle combat interaction
         if (bot->CanAttack())
         {
@@ -521,7 +505,7 @@ void Controller::HandlePlayerDamage(Bot *attackingBot)
   case BotType::THUG:
     damage = 15.0f;
     break;
-  case BotType::SWAT:
+  case BotType::GANGSTER:
     damage = 20.0f; // SWAT is more precise
     break;
   default:
@@ -571,23 +555,15 @@ void Controller::HandleBotPairInteraction(Bot *bot1, Bot *bot2, float distance)
   BotType type2 = bot2->GetBotType();
 
   // Civilians panic when near hostile bots
-  if (type1 == BotType::CIVILIAN && (type2 == BotType::THUG || type2 == BotType::SWAT))
+  if (type1 == BotType::CIVILIAN && (type2 == BotType::THUG || type2 == BotType::GANGSTER))
   {
     CivilianBot *civilian = static_cast<CivilianBot *>(bot1);
     civilian->SetState(BotState::FLEEING);
   }
-  else if (type2 == BotType::CIVILIAN && (type1 == BotType::THUG || type1 == BotType::SWAT))
+  else if (type2 == BotType::CIVILIAN && (type1 == BotType::THUG || type1 == BotType::GANGSTER))
   {
     CivilianBot *civilian = static_cast<CivilianBot *>(bot2);
     civilian->SetState(BotState::FLEEING);
-  }
-
-  // SWAT vs Thugs - potential conflict
-  if ((type1 == BotType::SWAT && type2 == BotType::THUG) ||
-      (type1 == BotType::THUG && type2 == BotType::SWAT))
-  {
-    // They might engage each other instead of just the player
-    // This adds dynamic conflict to the game
   }
 }
 
@@ -622,7 +598,7 @@ const char *Controller::GetBotTypeName(BotType type)
   {
   case BotType::CIVILIAN:
     return "Civilian";
-  case BotType::SWAT:
+  case BotType::GANGSTER:
     return "SWAT";
   case BotType::THUG:
     return "Thug";
@@ -708,7 +684,7 @@ void Controller::DrawBotTacticalInfo(Bot *bot)
   Vector2 botPos = {bot->x, bot->y};
 
   // Draw detection range (semi-transparent circle)
-  if (bot->GetBotType() == BotType::SWAT)
+  if (bot->GetBotType() == BotType::GANGSTER)
   {
     DrawCircleLines(botPos.x, botPos.y, 250.0f, Fade(BLUE, 0.3f));
   }
@@ -737,7 +713,7 @@ void Controller::DrawBotStatusHUD()
     case BotType::CIVILIAN:
       civilians++;
       break;
-    case BotType::SWAT:
+    case BotType::GANGSTER:
       swat++;
       break;
     case BotType::THUG:

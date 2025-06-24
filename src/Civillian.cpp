@@ -13,6 +13,10 @@ void CivilianBot::LoadTextures()
   // Set texture path - note: this variable doesn't exist in base Bot class
   // You may need to add it to Bot.hpp or handle texture loading differently
   // texturePath = "assets/textures/civilian.png";
+  idleTexture = LoadTexture("resource/civillian/civilIdle.png");
+  idleLeftTexture = LoadTexture("resource/civillian/civilIdle2.png");
+  walkTexture = LoadTexture("resource/civillian/civilWalk.png");
+  runTexture = LoadTexture("resource/civillian/civilRun.png");
 
   // Call base class texture loading if needed
   Bot::LoadTextures();
@@ -20,10 +24,10 @@ void CivilianBot::LoadTextures()
 
 void CivilianBot::SetProperties()
 {
-  // Set civilian-specific properties
-  maxHealth = 50;     // Use maxHealth from base class
-  health = maxHealth; // Use health from base class (not currentHealth)
-  speed = 80.0f;      // Use speed from base class
+
+  maxHealth = 50;
+  health = maxHealth;
+  speed = 80.0f;
   // maxSpeed doesn't exist in base Bot - you may need to add it
   // maxSpeed = 120.0f;
 
@@ -54,8 +58,7 @@ void CivilianBot::UpdateAI(Vector2 playerPos, float deltaTime, const std::vector
   }
   else
   {
-    // Normal civilian behavior - wandering, idle animation, etc.
-    // Call base Bot AI for basic movement and state management
+
     Bot::UpdateAI(playerPos, deltaTime, otherBots);
 
     // Override any aggressive behaviors that might be in base class
@@ -96,8 +99,8 @@ void CivilianBot::PanicFlee(Vector2 threat, const std::vector<Bot *> &otherBots)
 {
   // Calculate direction away from threat
   Vector2 fleeDirection = {
-      x - threat.x,  // Use x from base class instead of position.x
-      y - threat.y}; // Use y from base class instead of position.y
+      x - threat.x, // Use x from base class instead of position.x
+      0.0f};
 
   // Normalize the flee direction
   float length = std::sqrt(fleeDirection.x * fleeDirection.x + fleeDirection.y * fleeDirection.y);
@@ -140,7 +143,7 @@ void CivilianBot::PanicFlee(Vector2 threat, const std::vector<Bot *> &otherBots)
   // velocity doesn't exist in base Bot - you may need to add it or use MoveTowards
   Vector2 targetPos = {
       x + fleeDirection.x * panicSpeed,
-      y + fleeDirection.y * panicSpeed};
+      y};
 
   // Use MoveTowards from base class instead of setting velocity directly
   MoveTowards(targetPos);

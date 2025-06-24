@@ -75,6 +75,8 @@ public:
   Vector2 GetPosition() const { return {x, y}; };
   bool IsInPosition() const { return isInPosition; };
   bool isInPosition;
+  int frameWidth = 32;
+  int frameHeight = 32;
 
 protected:
   // Texture resources (to be loaded in LoadTextures)

@@ -32,7 +32,7 @@ enum class BotType
 {
   CIVILIAN,
   THUG,
-  SWAT,
+  GANGSTER
 
 };
 enum class BotState

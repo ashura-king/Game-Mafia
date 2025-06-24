@@ -18,6 +18,7 @@ public:
 
   // Override E-SWAT tactics for thug-specific behavior
   void ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots) override;
+  virtual void ExecutePositioning(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
 
 private:
   // Thug-specific properties

@@ -10,7 +10,7 @@
 #include "includes/TextOutlined.hpp"
 #include "includes/Civillian.hpp"
 #include "includes/ThugBot.hpp"
-#include "includes/Swat.hpp"
+#include "includes/GangsterBot.hpp"
 #include "includes/SettingMenu.hpp"
 #include "includes/SettingPop.hpp"
 #include "includes/SettingMenu.hpp"
@@ -29,7 +29,7 @@ public:
   void Draw();
   void Unload();
   void SpawnBots(int count);
-  const char *GetBotStateText(BotState state); // ✅ Correct declaration
+  const char *GetBotStateText(BotState state);
   const float SPAWN_SAFE_DISTANCE = 200.0f;
   const int MAX_BOTS_PER_TYPE = 6;
   const float BOT_INTERACTION_RANGE = 100.0f;
@@ -92,7 +92,6 @@ private:
   void UpdateBotAI(Vector2 playerPos, float deltaTime);
   void UpdateBotSpecificBehavior(Bot *bot, Vector2 playerPos,
                                  float deltaTime, const std::vector<Bot *> &allBots);
-  void AlertNearbySWAT(Vector2 alertPosition, const std::vector<Bot *> &allBots);
   void HandleBotPlayerInteractions(Vector2 playerPos);
   void HandlePlayerDamage(Bot *attackingBot);
   void HandleBotInteractions();

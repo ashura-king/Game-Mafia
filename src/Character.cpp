@@ -227,8 +227,7 @@ void Character::Update()
   fireTimer -= GetFrameTime();
   fireTimer = std::max(fireTimer, 0.0f);
 
-  // Keep character within screen bounds
-  float screenWidth = GetScreenWidth();
+    float screenWidth = GetScreenWidth();
   if (x < 0)
     x = 0;
   if (x + width > screenWidth)

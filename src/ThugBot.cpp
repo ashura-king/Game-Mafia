@@ -9,11 +9,11 @@ ThugBot::ThugBot(float startX, float startY) : Bot(startX, startY)
 
 void ThugBot::LoadTextures()
 {
-  // Load thug-specific textures
-  // idleTexture = LoadTexture("assets/thug/idle.png");
-  // walkTexture = LoadTexture("assets/thug/walk.png");
-  // runTexture = LoadTexture("assets/thug/run.png");
-  // attackTexture = LoadTexture("assets/thug/attack.png");
+  idleTexture = LoadTexture("resource/thug/thugIdle.png");
+  idleLeftTexture = LoadTexture("resource/thug/thugIdle.png");
+  walkTexture = LoadTexture("resource/thug/thugwalk.png");
+  runTexture = LoadTexture("resource/thug/thugRun.png");
+  attackTexture = LoadTexture("resource/thug/thugAttack.png");
 
   isLoaded = true;
 }
@@ -86,6 +86,54 @@ void ThugBot::ExecutePackTactics(Vector2 playerPos, float deltaTime, const std::
   ExecuteESWATTactics(playerPos, deltaTime, otherBots);
 }
 
+void ThugBot::ExecutePositioning(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots)
+{
+  float distanceToTarget = Vector2Distance({x, y}, tacticalTarget);
+  isInPosition = (distanceToTarget < 40.0f);
+
+  if (!isInPosition)
+  {
+    Vector2 direction = Vector2Subtract(tacticalTarget, {x, y});
+    direction.y = 0; // 🔒 Lock vertical movement
+    direction = Vector2Normalize(direction);
+
+    float positioningSpeed = speed * THUG_CHASE_SPEED_BOOST;
+
+    // Optional: chaotic thug spacing logic
+    Vector2 formationAdjustment = {0, 0};
+    for (const Bot *other : allBots)
+    {
+      if (other != this && other->IsAlive() && other->IsSpawned() &&
+          other->GetBotType() == BotType::THUG)
+      {
+        float distance = Vector2Distance({x, y}, {other->x, other->y});
+        if (distance < THUG_PACK_DETECTION_RANGE && distance > 0)
+        {
+          Vector2 separation = Vector2Normalize(Vector2Subtract({x, y}, {other->x, other->y}));
+          separation.y = 0; // 🔒 Keep horizontal-only
+          formationAdjustment = Vector2Add(formationAdjustment,
+                                           Vector2Scale(separation, 0.3f));
+        }
+      }
+    }
+
+    direction = Vector2Normalize(Vector2Add(direction, formationAdjustment));
+
+    x += direction.x * positioningSpeed * deltaTime;
+    UpdateDirection(direction);
+    SetState(BotState::TACTICAL_POSITIONING);
+  }
+  else
+  {
+    waitingForSignal = true;
+    if (CheckESWATCoordination(allBots) && tacticalTimer > 1.2f)
+    {
+      tacticalPhase = TacticalPhase::COORDINATED_ATTACK;
+      tacticalTimer = 0.0f;
+    }
+  }
+}
+
 void ThugBot::ExecuteIndividualBehavior(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots)
 {
   float distanceToPlayer = Vector2Distance({x, y}, playerPos);
@@ -100,25 +148,30 @@ void ThugBot::ExecuteIndividualBehavior(Vector2 playerPos, float deltaTime, cons
   {
     SetState(BotState::CHASING);
 
-    // Enhanced chase behavior with aggression boost
-    Vector2 direction = Vector2Normalize(Vector2Subtract(playerPos, {x, y}));
+    Vector2 direction = Vector2Subtract(playerPos, {x, y});
+    direction.y = 0;
+    direction = Vector2Normalize(direction);
+
     float chaseSpeed = speed * THUG_CHASE_SPEED_BOOST;
 
-    Vector2 nextPos = {x + direction.x * chaseSpeed * deltaTime,
-                       y + direction.y * chaseSpeed * deltaTime};
+    Vector2 nextPos = {
+        x + direction.x * chaseSpeed * deltaTime,
+        y // keep Y unchanged
+    };
 
     if (!WouldCollideWithBots(nextPos, otherBots))
     {
       x = nextPos.x;
-      y = nextPos.y;
       UpdateDirection(direction);
     }
     else
     {
-      // Aggressive avoidance - thugs are more likely to push through
+
       Vector2 avoidDir = GetAvoidanceDirection(nextPos, otherBots);
+      avoidDir.y = 0;
+      avoidDir = Vector2Normalize(avoidDir);
+
       x += avoidDir.x * chaseSpeed * deltaTime;
-      y += avoidDir.y * chaseSpeed * deltaTime;
       UpdateDirection(avoidDir);
     }
   }

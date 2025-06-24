@@ -59,7 +59,6 @@ Bot::Bot(float startX, float startY)
   groupId = nextGroupId++;
 }
 
-// E-SWAT style tactical role assignment
 void Bot::AssignESWATRole(const std::vector<Bot *> &allBots, Vector2 playerPos)
 {
   // Count active bots in the same group
@@ -67,7 +66,7 @@ void Bot::AssignESWATRole(const std::vector<Bot *> &allBots, Vector2 playerPos)
   for (Bot *bot : allBots)
   {
     if (bot->IsAlive() && bot->IsSpawned() &&
-        (bot->GetBotType() == BotType::THUG || bot->GetBotType() == BotType::SWAT))
+        (bot->GetBotType() == BotType::THUG || bot->GetBotType() == BotType::GANGSTER))
     {
       activeBots.push_back(bot);
     }
@@ -190,7 +189,7 @@ bool Bot::CheckESWATCoordination(const std::vector<Bot *> &allBots)
   for (const Bot *bot : allBots)
   {
     if (bot->IsAlive() && bot->IsSpawned() &&
-        (bot->GetBotType() == BotType::THUG || bot->GetBotType() == BotType::SWAT))
+        (bot->GetBotType() == BotType::THUG || bot->GetBotType() == BotType::GANGSTER))
     {
       totalActiveBots++;
       if (bot->isInPosition)
@@ -207,6 +206,9 @@ bool Bot::CheckESWATCoordination(const std::vector<Bot *> &allBots)
 // Main E-SWAT tactical behavior
 void Bot::ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots)
 {
+
+  if (!(type == BotType::THUG || type == BotType::GANGSTER))
+    return;
   tacticalTimer += deltaTime;
 
   // Assign role based on current situation
@@ -234,33 +236,32 @@ void Bot::ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const std::vec
 // Positioning phase - move to tactical positions
 void Bot::ExecutePositioning(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots)
 {
-  float distanceToTarget = Vector2Distance({x, y}, tacticalTarget);
-  isInPosition = (distanceToTarget < 50.0f);
+  Vector2 targetPos = GetESWATPosition(playerPos, allBots);
 
-  if (!isInPosition)
+  // Only consider horizontal positioning
+  Vector2 direction = Vector2Subtract(targetPos, {x, y});
+  direction.y = 0; // Remove vertical movement
+
+  float horizontalDistance = fabs(direction.x);
+
+  if (horizontalDistance > 30.0f)
   {
-    // Move to position with E-SWAT precision
-    Vector2 direction = Vector2Normalize(Vector2Subtract(tacticalTarget, {x, y}));
-    float positioningSpeed = speed * ESWAT_POSITIONING_SPEED;
+    direction = Vector2Normalize(direction);
 
-    x += direction.x * positioningSpeed * deltaTime;
-    y += direction.y * positioningSpeed * deltaTime;
+    Vector2 nextPos = {x + direction.x * speed * ESWAT_POSITIONING_SPEED * deltaTime, y};
 
-    UpdateDirection(direction);
-    SetState(BotState::TACTICAL_POSITIONING);
+    if (!WouldCollideWithBots(nextPos, allBots))
+    {
+      x = nextPos.x;
+      isInPosition = false;
+    }
   }
   else
   {
-    // Wait for coordination signal
-    waitingForSignal = true;
-
-    // Check if all units are ready for coordinated attack
-    if (CheckESWATCoordination(allBots) && tacticalTimer > 1.0f)
-    {
-      tacticalPhase = TacticalPhase::COORDINATED_ATTACK;
-      tacticalTimer = 0.0f;
-    }
+    isInPosition = true;
   }
+
+  UpdateDirection(direction);
 }
 
 // Coordinated attack phase - synchronized assault
@@ -276,10 +277,11 @@ void Bot::ExecuteCoordinatedAttack(Vector2 playerPos, float deltaTime, const std
     // Charge directly at player
     if (distanceToPlayer > attackRange)
     {
-      Vector2 chargeDir = Vector2Normalize(Vector2Subtract(playerPos, {x, y}));
+      Vector2 chargeDir = Vector2Subtract(playerPos, {x, y});
+      chargeDir.y = 0;
+      chargeDir = Vector2Normalize(chargeDir);
       float chargeSpeed = speed * ESWAT_ATTACK_SPEED;
       x += chargeDir.x * chargeSpeed * deltaTime;
-      y += chargeDir.y * chargeSpeed * deltaTime;
       UpdateDirection(chargeDir);
     }
     else if (CanAttack())
@@ -298,10 +300,11 @@ void Bot::ExecuteCoordinatedAttack(Vector2 playerPos, float deltaTime, const std
     // Quick strike from behind
     if (distanceToPlayer > attackRange)
     {
-      Vector2 ambushDir = Vector2Normalize(Vector2Subtract(playerPos, {x, y}));
+      Vector2 ambushDir = Vector2Subtract(playerPos, {x, y});
       float ambushSpeed = speed * (ESWAT_ATTACK_SPEED * 1.2f);
+      ambushDir.y = 0;
+      ambushDir = Vector2Normalize(ambushDir);
       x += ambushDir.x * ambushSpeed * deltaTime;
-      y += ambushDir.y * ambushSpeed * deltaTime;
       UpdateDirection(ambushDir);
     }
     else if (CanAttack())
@@ -315,9 +318,10 @@ void Bot::ExecuteCoordinatedAttack(Vector2 playerPos, float deltaTime, const std
     if (distanceToPlayer < circleRadius * 1.2f)
     {
       // Move back to maintain distance
-      Vector2 retreatDir = Vector2Normalize(Vector2Subtract({x, y}, playerPos));
+      Vector2 retreatDir = Vector2Subtract({x, y}, playerPos);
+      retreatDir.y = 0;
+      retreatDir = Vector2Normalize(retreatDir);
       x += retreatDir.x * speed * deltaTime;
-      y += retreatDir.y * speed * deltaTime;
     }
     else if (CanAttack())
     {
@@ -340,19 +344,21 @@ void Bot::ExecuteRetreatRegroup(Vector2 playerPos, float deltaTime, const std::v
   SetState(BotState::RETREATING);
 
   // Calculate retreat position (opposite direction from player)
-  Vector2 retreatDir = Vector2Normalize(Vector2Subtract({x, y}, playerPos));
+  Vector2 retreatDir = Vector2Subtract({x, y}, playerPos);
+  retreatDir.y = 0; // ✨ Ignore vertical component
+  retreatDir = Vector2Normalize(retreatDir);
   Vector2 retreatTarget = {
       x + retreatDir.x * circleRadius,
-      y + retreatDir.y * circleRadius};
-
+      y};
   float distanceToRetreat = Vector2Distance({x, y}, retreatTarget);
 
   if (distanceToRetreat > 30.0f)
   {
-    // Move to retreat position
-    Vector2 moveDir = Vector2Normalize(Vector2Subtract(retreatTarget, {x, y}));
+
+    Vector2 moveDir = Vector2Subtract(retreatTarget, {x, y});
+    moveDir.y = 0;
+    moveDir = Vector2Normalize(moveDir);
     x += moveDir.x * speed * deltaTime;
-    y += moveDir.y * speed * deltaTime;
     UpdateDirection(moveDir);
   }
 
@@ -369,25 +375,26 @@ void Bot::ExecuteRetreatRegroup(Vector2 playerPos, float deltaTime, const std::v
 // Circle strike movement (for flankers)
 void Bot::CircleStrikePlayer(Vector2 playerPos, float deltaTime)
 {
-  float distanceToPlayer = Vector2Distance({x, y}, playerPos);
+  circleCenter = playerPos;
+  circleAngle += deltaTime * 2.0f; // Rotation speed
 
-  if (distanceToPlayer > ESWAT_ATTACK_DISTANCE)
+  // Calculate position on horizontal circle (ellipse)
+  float horizontalRadius = circleRadius;
+
+  Vector2 targetPos;
+  targetPos.x = circleCenter.x + cos(circleAngle) * horizontalRadius;
+  targetPos.y = y; // Keep current Y position
+
+  // Move towards circle position horizontally
+  Vector2 direction = Vector2Subtract(targetPos, {x, y});
+  direction.y = 0;
+
+  if (Vector2Length(direction) > 0)
   {
-    // Move closer while circling
-    circleAngle += deltaTime * 2.0f; // Adjust circle speed
+    direction = Vector2Normalize(direction);
+    x += direction.x * speed * ESWAT_ATTACK_SPEED * deltaTime;
 
-    Vector2 circlePos = {
-        playerPos.x + cosf(circleAngle) * ESWAT_ATTACK_DISTANCE,
-        playerPos.y + sinf(circleAngle) * ESWAT_ATTACK_DISTANCE};
-
-    Vector2 moveDir = Vector2Normalize(Vector2Subtract(circlePos, {x, y}));
-    x += moveDir.x * speed * ESWAT_ATTACK_SPEED * deltaTime;
-    y += moveDir.y * speed * ESWAT_ATTACK_SPEED * deltaTime;
-    UpdateDirection(moveDir);
-  }
-  else if (CanAttack())
-  {
-    Attack();
+    UpdateDirection(direction);
   }
 }
 
@@ -409,12 +416,22 @@ BotType Bot::GetBotType() const
 
 void Bot::Update()
 {
-  // Update animations and timers
+
   UpdateAnimations();
 
   // Update spawn timer
   if (!isSpawned)
   {
+
+    static const float GROUND_LEVEL = 270.0f; // Adjust this to match your ground level
+    y = GROUND_LEVEL;
+
+    // Keep bots within screen bounds horizontally
+    const float SCREEN_MARGIN = 50.0f;
+    if (x < SCREEN_MARGIN)
+      x = SCREEN_MARGIN;
+    if (x > GetScreenWidth() - SCREEN_MARGIN)
+      x = GetScreenWidth() - SCREEN_MARGIN;
     spawnTimer += GetFrameTime();
     if (spawnTimer >= spawnDelay)
     {
@@ -471,11 +488,10 @@ void Bot::Draw()
   Rectangle sourceRect;
   GetTextureAndAnimation(currentTexture, sourceRect);
 
-  Rectangle destRect = {x, y, width, height};
+  const float verticalDrawOffset = 10.0f;
+  Rectangle destRect = {x, y - verticalDrawOffset, width, height};
   Vector2 origin = {width / 2.0f, height / 2.0f};
-
   DrawTexturePro(currentTexture, sourceRect, destRect, origin, 0.0f, WHITE);
-
   // Draw health bar
   if (health < maxHealth)
   {
@@ -490,71 +506,107 @@ void Bot::Draw()
 
 void Bot::ChasePlayer(Vector2 playerPos, const std::vector<Bot *> &otherBots)
 {
-  Vector2 direction = Vector2Normalize(Vector2Subtract(playerPos, {x, y}));
+  if (state != BotState::CHASING)
+    return;
 
-  // Check for collision avoidance
-  Vector2 nextPos = {x + direction.x * speed * GetFrameTime(),
-                     y + direction.y * speed * GetFrameTime()};
+  Vector2 direction = Vector2Subtract(playerPos, {x, y});
 
-  if (!WouldCollideWithBots(nextPos, otherBots))
+  // Only consider horizontal distance
+  direction.y = 0;
+
+  float horizontalDistance = fabs(direction.x);
+
+  if (horizontalDistance > 10.0f) // Minimum distance threshold
   {
-    x = nextPos.x;
-    y = nextPos.y;
+    direction = Vector2Normalize(direction);
+
+    // Check for bot collisions in horizontal movement
+    Vector2 nextPos = {x + direction.x * speed * GetFrameTime(), y};
+
+    if (!WouldCollideWithBots(nextPos, otherBots))
+    {
+      x = nextPos.x;
+      // Y position stays the same
+    }
+    else
+    {
+      // If blocked, try to find alternative horizontal direction
+      Vector2 avoidanceDir = GetAvoidanceDirection(nextPos, otherBots);
+      avoidanceDir.y = 0; // Keep only horizontal component
+
+      if (Vector2Length(avoidanceDir) > 0)
+      {
+        avoidanceDir = Vector2Normalize(avoidanceDir);
+        x += avoidanceDir.x * speed * 0.5f * GetFrameTime();
+      }
+    }
+
     UpdateDirection(direction);
-  }
-  else
-  {
-    // Find alternative path
-    Vector2 avoidDir = GetAvoidanceDirection(nextPos, otherBots);
-    x += avoidDir.x * speed * GetFrameTime();
-    y += avoidDir.y * speed * GetFrameTime();
-    UpdateDirection(avoidDir);
   }
 }
 
 void Bot::Wander(float deltaTime, const std::vector<Bot *> &otherBots)
 {
+
   wanderTimer += deltaTime;
 
-  // Set new wander target periodically
-  if (wanderTimer >= wanderTime)
+  // Set new horizontal wander target
+  if (wanderTimer >= wanderTime || Vector2Distance({x, y}, wanderTarget) < 20.0f)
   {
-    wanderTarget.x = x + (GetRandomValue(-200, 200));
-    wanderTarget.y = y + (GetRandomValue(-200, 200));
+    // Generate random horizontal target
+    wanderTarget.x = x + GetRandomValue(-200, 200);
+    wanderTarget.y = y; // Keep same Y level
+
     wanderTimer = 0.0f;
+    wanderTime = GetRandomValue(2, 5); // Random wander duration
   }
 
-  // Move towards wander target
-  float distanceToTarget = Vector2Distance({x, y}, wanderTarget);
-  if (distanceToTarget > 10.0f)
+  // Move towards horizontal target
+  Vector2 direction = Vector2Subtract(wanderTarget, {x, y});
+  direction.y = 0; // Remove vertical component
+
+  if (Vector2Length(direction) > 5.0f)
   {
-    Vector2 direction = Vector2Normalize(Vector2Subtract(wanderTarget, {x, y}));
-    Vector2 nextPos = {x + direction.x * speed * 0.5f * deltaTime,
-                       y + direction.y * speed * 0.5f * deltaTime};
+    direction = Vector2Normalize(direction);
+
+    Vector2 nextPos = {x + direction.x * speed * 0.5f * deltaTime, y};
 
     if (!WouldCollideWithBots(nextPos, otherBots))
     {
       x = nextPos.x;
-      y = nextPos.y;
-      UpdateDirection(direction);
     }
+
+    UpdateDirection(direction);
   }
 }
 
 void Bot::MoveTowards(Vector2 target)
 {
-  Vector2 direction = Vector2Normalize(Vector2Subtract(target, {x, y}));
-  x += direction.x * speed * GetFrameTime();
-  y += direction.y * speed * GetFrameTime();
-  UpdateDirection(direction);
+  Vector2 direction = Vector2Subtract(target, {x, y});
+  direction.y = 0;
+
+  if (Vector2Length(direction) > 0)
+  {
+    direction = Vector2Normalize(direction);
+
+    x += direction.x * speed * GetFrameTime();
+
+    UpdateDirection(direction);
+  }
 }
 
 void Bot::MoveAway(Vector2 threat)
 {
-  Vector2 direction = Vector2Normalize(Vector2Subtract({x, y}, threat));
-  x += direction.x * speed * GetFrameTime();
-  y += direction.y * speed * GetFrameTime();
-  UpdateDirection(direction);
+  Vector2 direction = Vector2Subtract({x, y}, threat);
+  direction.y = 0;
+
+  if (Vector2Length(direction) > 0)
+  {
+    direction = Vector2Normalize(direction);
+    x += direction.x * speed * GetFrameTime();
+
+    UpdateDirection(direction);
+  }
 }
 
 void Bot::Patrol()
@@ -674,15 +726,66 @@ Vector2 Bot::GetAvoidanceDirection(Vector2 blockedPosition, const std::vector<Bo
 
 void Bot::UpdateAnimations()
 {
-  // Update current animation frame
-  // This would be implemented based on your animation system
+  switch (state)
+  {
+  case BotState::IDLE:
+    if (direction == Direction::LEFT)
+      Animation_Update(&idleLeftAnim);
+    else
+      Animation_Update(&idleRightAnim);
+    break;
+
+  case BotState::CHASING:
+  case BotState::WANDERING:
+  case BotState::RETREATING:
+    Animation_Update(&walkAnim);
+    break;
+
+  case BotState::COORDINATED_ATTACK:
+    Animation_Update(&runAnim);
+    break;
+
+  case BotState::ATTACK:
+    Animation_Update(&attackAnim);
+    break;
+
+  default:
+    break;
+  }
 }
 
 void Bot::GetTextureAndAnimation(Texture2D &texture, Rectangle &source)
 {
-  // Default implementation - override in derived classes
-  texture = idleTexture;
-  source = {0, 0, (float)texture.width, (float)texture.height};
+  texture = idleTexture; // Or your unified bot sprite sheet
+
+  switch (state)
+  {
+  case BotState::IDLE:
+    if (direction == Direction::LEFT)
+      source = animation_frame(&idleLeftAnim, frameWidth, frameHeight);
+    else
+      source = animation_frame(&idleRightAnim, frameWidth, frameHeight);
+    break;
+
+  case BotState::CHASING:
+  case BotState::WANDERING:
+  case BotState::RETREATING:
+    source = animation_frame(&walkAnim, frameWidth, frameHeight);
+    break;
+
+  case BotState::COORDINATED_ATTACK:
+    source = animation_frame(&runAnim, frameWidth, frameHeight);
+    break;
+
+  case BotState::ATTACK:
+    source = animation_frame(&attackAnim, frameWidth, frameHeight);
+    break;
+
+  default:
+    // fallback
+    source = animation_frame(&idleRightAnim, frameWidth, frameHeight);
+    break;
+  }
 }
 
 void Bot::UpdateDirection(Vector2 movementVector)
