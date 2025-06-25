@@ -5,15 +5,12 @@
 #include "includes/GameType.hpp"
 #include <vector>
 
-// Base Bot class that all specific bot types inherit from
 class Bot
 {
 public:
-  // Constructor & virtual destructor
   Bot(float startX, float startY);
   virtual ~Bot();
 
-  // Virtual methods for customization in derived classes
   virtual void LoadTextures();
   virtual void SetProperties();
   virtual BotType GetBotType() const;
@@ -75,8 +72,8 @@ public:
   Vector2 GetPosition() const { return {x, y}; };
   bool IsInPosition() const { return isInPosition; };
   bool isInPosition;
-  int frameWidth = 32;
-  int frameHeight = 32;
+  float frameWidth;
+  float frameHeight;
 
 protected:
   // Texture resources (to be loaded in LoadTextures)

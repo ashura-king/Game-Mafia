@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cmath>
 
-// Static member initialization
 int Bot::nextGroupId = 1;
 
 Bot::Bot(float startX, float startY)
@@ -10,8 +9,10 @@ Bot::Bot(float startX, float startY)
   // ... existing initialization code ...
   x = startX;
   y = startY;
-  width = 32.0f;
-  height = 32.0f;
+  frameHeight = 128.0f;
+  frameWidth = 128.0f;
+  width = frameWidth;
+  height = frameHeight;
   speed = 100.0f;
   direction = Direction::RIGHT;
   health = 100;
@@ -401,12 +402,19 @@ void Bot::CircleStrikePlayer(Vector2 playerPos, float deltaTime)
 // Implement other necessary Bot methods (these would need to be adapted from your existing Bot.cpp)
 void Bot::LoadTextures()
 {
-  // Default implementation - override in derived classes
-}
+  idleRightAnim = {0, 0, 0, 0.0f, 0.0f, 0, AnimationType::REPEATING};
+  idleLeftAnim = {0, 0, 0, 0.0f, 0.0f, 0, AnimationType::REPEATING};
+  walkAnim = {0, 0, 0, 0.0f, 0.0f, 0, AnimationType::REPEATING};
+  runAnim = {0, 0, 0, 0.0f, 0.0f, 0, AnimationType::REPEATING};
+  attackAnim = {0, 0, 0, 0.0f, 0.0f, 0, AnimationType::ONESHOT};
+};
 
 void Bot::SetProperties()
 {
-  // Default implementation - override in derived classes
+  frameWidth = 128.0f;
+  frameHeight = 128.0f;
+  width = frameWidth;
+  height = frameHeight;
 }
 
 BotType Bot::GetBotType() const
@@ -488,19 +496,31 @@ void Bot::Draw()
   Rectangle sourceRect;
   GetTextureAndAnimation(currentTexture, sourceRect);
 
-  const float verticalDrawOffset = 10.0f;
-  Rectangle destRect = {x, y - verticalDrawOffset, width, height};
-  Vector2 origin = {width / 2.0f, height / 2.0f};
-  DrawTexturePro(currentTexture, sourceRect, destRect, origin, 0.0f, WHITE);
-  // Draw health bar
+  const float verticalDrawOffset = 8.0f;
+
+  // Scale factor for making sprites larger if needed
+  const float SPRITE_SCALE = 1.5f; // Adjust this value to make sprites bigger/smaller
+
+  Rectangle destRect = {
+      x - (width * SPRITE_SCALE) / 2.0f,
+      y - (height * SPRITE_SCALE) + verticalDrawOffset,
+      width * SPRITE_SCALE,
+      height * SPRITE_SCALE};
+
+  DrawTexturePro(currentTexture, sourceRect, destRect, {0, 0}, 0.0f, WHITE);
+
+  // Health bar (above head) - adjust position for scaled sprite
   if (health < maxHealth)
   {
-    float healthBarWidth = width;
-    float healthBarHeight = 4.0f;
-    float healthPercent = (float)health / (float)maxHealth;
+    float barW = width * SPRITE_SCALE;
+    float barH = 4.0f;
+    float percent = (float)health / (float)maxHealth;
 
-    DrawRectangle(x - healthBarWidth / 2, y - height / 2 - 10, healthBarWidth, healthBarHeight, RED);
-    DrawRectangle(x - healthBarWidth / 2, y - height / 2 - 10, healthBarWidth * healthPercent, healthBarHeight, GREEN);
+    float barX = x - barW / 2.0f;
+    float barY = y - (height * SPRITE_SCALE) - 12.0f;
+
+    DrawRectangle(barX, barY, barW, barH, RED);
+    DrawRectangle(barX, barY, barW * percent, barH, GREEN);
   }
 }
 
@@ -756,33 +776,35 @@ void Bot::UpdateAnimations()
 
 void Bot::GetTextureAndAnimation(Texture2D &texture, Rectangle &source)
 {
-  texture = idleTexture; // Or your unified bot sprite sheet
 
   switch (state)
   {
   case BotState::IDLE:
-    if (direction == Direction::LEFT)
-      source = animation_frame(&idleLeftAnim, frameWidth, frameHeight);
-    else
-      source = animation_frame(&idleRightAnim, frameWidth, frameHeight);
+    texture = (direction == Direction::LEFT) ? idleLeftTexture : idleTexture;
+    source = animation_frame((direction == Direction::LEFT) ? &idleLeftAnim : &idleRightAnim, frameWidth, frameHeight);
     break;
 
   case BotState::CHASING:
   case BotState::WANDERING:
   case BotState::RETREATING:
+    texture = walkTexture;
     source = animation_frame(&walkAnim, frameWidth, frameHeight);
     break;
 
   case BotState::COORDINATED_ATTACK:
+  case BotState::TACTICAL_POSITIONING:
+    texture = runTexture;
+
     source = animation_frame(&runAnim, frameWidth, frameHeight);
     break;
 
   case BotState::ATTACK:
+    texture = attackTexture;
     source = animation_frame(&attackAnim, frameWidth, frameHeight);
     break;
 
   default:
-    // fallback
+    texture = idleTexture;
     source = animation_frame(&idleRightAnim, frameWidth, frameHeight);
     break;
   }
@@ -793,17 +815,12 @@ void Bot::UpdateDirection(Vector2 movementVector)
   if (directionChangeTimer > 0.0f)
     return;
 
-  if (abs(movementVector.x) > abs(movementVector.y))
+  if (movementVector.x != 0)
   {
     direction = (movementVector.x > 0) ? Direction::RIGHT : Direction::LEFT;
+    lastValidDirection = movementVector;
+    directionChangeTimer = DIRECTION_CHANGE_DELAY;
   }
-  else
-  {
-    direction = (movementVector.y > 0) ? Direction::DOWN : Direction::UP;
-  }
-
-  lastValidDirection = movementVector;
-  directionChangeTimer = DIRECTION_CHANGE_DELAY;
 }
 
 Bot::~Bot()

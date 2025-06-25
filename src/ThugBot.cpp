@@ -1,10 +1,22 @@
 #include "includes/ThugBot.hpp"
 #include <algorithm>
+#include <string>
 
 ThugBot::ThugBot(float startX, float startY) : Bot(startX, startY)
 {
-  type = BotType::THUG;
+  frameWidth = 128.0f;
+  frameHeight = 128.0f;
+  width = frameWidth;
+  height = frameHeight;
+
   SetProperties();
+  LoadTextures();
+
+  speed = 120.0f;
+  health = maxHealth = 150;
+  chaseRange = 200.0f;
+  attackRange = 60.0f;
+  attackCooldown = 0.6f;
 }
 
 void ThugBot::LoadTextures()
@@ -15,12 +27,32 @@ void ThugBot::LoadTextures()
   runTexture = LoadTexture("resource/thug/thugRun.png");
   attackTexture = LoadTexture("resource/thug/thugAttack.png");
 
+  if (idleTexture.id == 0)
+    printf("ERROR: Failed to load thugIdle.png\n");
+  if (walkTexture.id == 0)
+    printf("ERROR: Failed to load thugwalk.png\n");
+  if (runTexture.id == 0)
+    printf("ERROR: Failed to load thugRun.png\n");
+  if (attackTexture.id == 0)
+    printf("ERROR: Failed to load thugAttack.png\n");
+
+  idleRightAnim = {0, 5, 0, 0.25f, 0.25f, 1, AnimationType::REPEATING};
+  idleLeftAnim = {0, 5, 0, 0.25f, 0.25f, 1, AnimationType::REPEATING};
+  walkAnim = {0, 7, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
+  runAnim = {0, 7, 0, 0.1f, 0.1f, 1, AnimationType::REPEATING};
+  attackAnim = {0, 5, 0, 0.12f, 0.12f, 1, AnimationType::ONESHOT};
+
   isLoaded = true;
 }
 
 void ThugBot::SetProperties()
 {
-  // Thug-specific properties
+
+  frameWidth = 128.0f;
+  frameHeight = 128.0f;
+  width = frameWidth;
+  height = frameHeight;
+
   speed = 90.0f;
   health = 80;
   maxHealth = 80;
@@ -33,7 +65,6 @@ void ThugBot::SetProperties()
   attackCooldown = 0.8f;
   spawnDelay = 0.5f;
 
-  // Initialize patrol waypoints if needed
   currentWaypointIndex = 0;
   waypointReachDistance = 30.0f;
 }
@@ -94,7 +125,7 @@ void ThugBot::ExecutePositioning(Vector2 playerPos, float deltaTime, const std::
   if (!isInPosition)
   {
     Vector2 direction = Vector2Subtract(tacticalTarget, {x, y});
-    direction.y = 0; // 🔒 Lock vertical movement
+    direction.y = 0;
     direction = Vector2Normalize(direction);
 
     float positioningSpeed = speed * THUG_CHASE_SPEED_BOOST;

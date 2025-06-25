@@ -4,6 +4,7 @@ GangsterBot::GangsterBot(float startX, float startY) : Bot(startX, startY)
 {
   type = BotType::GANGSTER;
   SetProperties();
+  LoadTextures();
 }
 
 void GangsterBot::LoadTextures()
@@ -47,7 +48,7 @@ void GangsterBot::UpdateAI(Vector2 playerPos, float deltaTime, const std::vector
 
 void GangsterBot::ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots)
 {
-  // Delegated to gangster-specific logic
+
   ExecuteGangTactics(playerPos, deltaTime, allBots);
 }
 
@@ -135,5 +136,5 @@ void GangsterBot::Attack()
 
   SetState(BotState::ATTACK);
   attackTimer = GetTime();
-  Bot::Attack(); // basic attack logic
+  Bot::Attack();
 }

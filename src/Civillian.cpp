@@ -4,6 +4,13 @@
 
 CivilianBot::CivilianBot(float startX, float startY) : Bot(startX, startY)
 {
+  type = BotType::CIVILIAN;
+
+  frameWidth = 128.0f;
+  frameHeight = 128.0f;
+  width = frameWidth;
+  height = frameHeight;
+
   LoadTextures();
   SetProperties();
 }
@@ -25,19 +32,15 @@ void CivilianBot::LoadTextures()
 void CivilianBot::SetProperties()
 {
 
+  frameWidth = 128.0f;
+  frameHeight = 128.0f;
+  width = frameWidth;
+  height = frameHeight;
+
   maxHealth = 50;
   health = maxHealth;
   speed = 80.0f;
-  // maxSpeed doesn't exist in base Bot - you may need to add it
-  // maxSpeed = 120.0f;
-
-  // damage and attackRange don't exist in base Bot - you may need to add them
-  // damage = 0.0f;
-  // attackRange = 0.0f;
-
-  // detectionRange doesn't exist - you may need to add it or use chaseRange
-  chaseRange = 150.0f; // Use existing chaseRange instead of detectionRange
-
+  chaseRange = 150.0f;
   // Civilian-specific behavioral flags
   // isAggressive doesn't exist in base Bot - you may need to add it
   // isAggressive = false;
@@ -98,22 +101,17 @@ void CivilianBot::ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const 
 void CivilianBot::PanicFlee(Vector2 threat, const std::vector<Bot *> &otherBots)
 {
   // Calculate direction away from threat
-  Vector2 fleeDirection = {
-      x - threat.x, // Use x from base class instead of position.x
-      0.0f};
+  Vector2 fleeDirection = {x - threat.x, 0.0f};
 
-  // Normalize the flee direction
-  float length = std::sqrt(fleeDirection.x * fleeDirection.x + fleeDirection.y * fleeDirection.y);
+  float length = std::sqrt(fleeDirection.x * fleeDirection.x);
   if (length > 0.0f)
   {
     fleeDirection.x /= length;
-    fleeDirection.y /= length;
   }
   else
   {
-    // If at exact same position, flee in random direction
-    fleeDirection.x = (rand() % 200 - 100) / 100.0f;
-    fleeDirection.y = (rand() % 200 - 100) / 100.0f;
+
+    fleeDirection.x = (GetRandomValue(0, 1) == 0) ? -1.0f : 1.0f;
   }
 
   // Check for other civilians to avoid clustering
@@ -122,33 +120,23 @@ void CivilianBot::PanicFlee(Vector2 threat, const std::vector<Bot *> &otherBots)
     if (bot == this || bot->GetBotType() != BotType::CIVILIAN)
       continue;
 
-    // GetPosition() doesn't exist in base Bot - use x,y directly or add GetPosition()
-    Vector2 otherPos = bot->GetPosition();
-    float dist = std::sqrt(std::pow(x - otherPos.x, 2) + std::pow(y - otherPos.y, 2));
+    // Use bot->x and bot->y directly since GetPosition() doesn't exist
+    float dist = std::abs(x - bot->x);
 
     if (dist < 50.0f && dist > 0.0f)
     {
       // Add separation force to avoid bunching up
-      Vector2 separation = {
-          (x - otherPos.x) / dist,
-          (y - otherPos.y) / dist};
-      fleeDirection.x += separation.x * 0.3f;
-      fleeDirection.y += separation.y * 0.3f;
+      float separation = (x - bot->x) / dist;
+      fleeDirection.x += separation * 0.3f;
     }
   }
 
   // Apply panic speed boost
   float panicSpeed = speed * CIVILIAN_FLEE_SPEED_BOOST * CIVILIAN_PANIC_MULTIPLIER;
 
-  // velocity doesn't exist in base Bot - you may need to add it or use MoveTowards
-  Vector2 targetPos = {
-      x + fleeDirection.x * panicSpeed,
-      y};
+  x += fleeDirection.x * panicSpeed * GetFrameTime();
 
-  // Use MoveTowards from base class instead of setting velocity directly
-  MoveTowards(targetPos);
-
-  // Update state to reflect panic
+  MoveTowards(threat);
   SetState(BotState::FLEEING);
 }
 

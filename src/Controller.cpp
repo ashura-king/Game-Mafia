@@ -27,15 +27,28 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
 
   currentState = Gamestate::MENU;
 
-  // Load sounds and textures
-  clickSound = LoadSound("Audio/start.mp3");
-  backgroundMusic = LoadMusicStream("Audio/Intro1.mp3");
-  playingMusic = LoadMusicStream("Audio/PlayingSound.mp3");
-  titleTexture = LoadTexture("resource/texture/TitleGame.png");
-  titleScale = scale * 3.0f;
-  titlePosition = {(screenWidth - (titleTexture.width * titleScale)) / 2.0f, 20.0f * scale};
+  // Load sounds and textures with validation
+  if (FileExists("Audio/start.mp3"))
+  {
+    clickSound = LoadSound("Audio/start.mp3");
+  }
+  if (FileExists("Audio/Intro1.mp3"))
+  {
+    backgroundMusic = LoadMusicStream("Audio/Intro1.mp3");
+  }
+  if (FileExists("Audio/PlayingSound.mp3"))
+  {
+    playingMusic = LoadMusicStream("Audio/PlayingSound.mp3");
+  }
 
-  // Initialize player
+  if (FileExists("resource/texture/TitleGame.png"))
+  {
+    titleTexture = LoadTexture("resource/texture/TitleGame.png");
+    titleScale = scale * 3.0f;
+    titlePosition = {(screenWidth - (titleTexture.width * titleScale)) / 2.0f, 20.0f * scale};
+  }
+
+  // Initialize player with validation
   player = new Character("resource/player/Idle.png",
                          "resource/player/Idle_2.png",
                          "resource/player/Walk.png",
@@ -47,52 +60,92 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
                          "Audio/Attack.mp3",
                          "resource/player/bullet.png",
                          120.0f, 270.0f, 2.0f);
-  player->SetJumpSpeed(15.0f);
-  player->SetGravity(0.8f);
-  player->SetGroundY(270.0f);
-  player->SetFireCooldown(0.3f);
-  player->SetGunshotVolume(0.7f);
+  if (player)
+  {
+    player->SetJumpSpeed(15.0f);
+    player->SetGravity(0.8f);
+    player->SetGroundY(270.0f);
+    player->SetFireCooldown(0.3f);
+    player->SetGunshotVolume(0.7f);
+  }
 
-  // Menu Layers
-  menuLayers = {
-      new Layer("resource/texture/Sky_pale.png", 0.1f, 0, scale),
-      new Layer("resource/texture/back.png", 0.5f, 0, scale),
-      new Layer("resource/texture/Houses3_pale.png", 1.0f, 70, scale),
-      new Layer("resource/texture/houses1.png", 1.0f, 70, scale),
-      new Layer("resource/texture/minishop&callbox.png", 1.0f, 80, scale),
-      new Layer("resource/texture/road&lamps.png", 1.0f, 75, scale)};
+  // Menu Layers with validation
+  if (FileExists("resource/texture/Sky_pale.png"))
+    menuLayers.push_back(new Layer("resource/texture/Sky_pale.png", 0.1f, 0, scale));
+  if (FileExists("resource/texture/back.png"))
+    menuLayers.push_back(new Layer("resource/texture/back.png", 0.5f, 0, scale));
+  if (FileExists("resource/texture/Houses3_pale.png"))
+    menuLayers.push_back(new Layer("resource/texture/Houses3_pale.png", 1.0f, 70, scale));
+  if (FileExists("resource/texture/houses1.png"))
+    menuLayers.push_back(new Layer("resource/texture/houses1.png", 1.0f, 70, scale));
+  if (FileExists("resource/texture/minishop&callbox.png"))
+    menuLayers.push_back(new Layer("resource/texture/minishop&callbox.png", 1.0f, 80, scale));
+  if (FileExists("resource/texture/road&lamps.png"))
+    menuLayers.push_back(new Layer("resource/texture/road&lamps.png", 1.0f, 75, scale));
 
-  // Game Layers
-  gameLayers = {
-      new Layer("resource/texture/sky.png", 0.1f, 0, scale),
-      new Layer("resource/texture/houses3.png", 0.5f, 0, scale),
-      new Layer("resource/texture/night2.png", 1.0f, 70, scale),
-      new Layer("resource/texture/night.png", 1.0f, 75, scale),
-      new Layer("resource/texture/road.png", 1.0f, 75, scale),
-      new Layer("resource/texture/crosswalk.png", 1.0f, 70, scale)};
+  // Game Layers with validation
+  if (FileExists("resource/texture/sky.png"))
+    gameLayers.push_back(new Layer("resource/texture/sky.png", 0.1f, 0, scale));
+  if (FileExists("resource/texture/houses3.png"))
+    gameLayers.push_back(new Layer("resource/texture/houses3.png", 0.5f, 0, scale));
+  if (FileExists("resource/texture/night2.png"))
+    gameLayers.push_back(new Layer("resource/texture/night2.png", 1.0f, 70, scale));
+  if (FileExists("resource/texture/night.png"))
+    gameLayers.push_back(new Layer("resource/texture/night.png", 1.0f, 75, scale));
+  if (FileExists("resource/texture/road.png"))
+    gameLayers.push_back(new Layer("resource/texture/road.png", 1.0f, 75, scale));
+  if (FileExists("resource/texture/crosswalk.png"))
+    gameLayers.push_back(new Layer("resource/texture/crosswalk.png", 1.0f, 70, scale));
 
-  // Main Game Layers
-  mainlayers = {
-      new Gamelayer("resource/texture/mainsky.png", 0.0f, scale),
-      new Gamelayer("resource/texture/housemain2.png", 0.0f, scale),
-      new Gamelayer("resource/texture/housemain.png", 0.0f, scale),
-      new Gamelayer("resource/texture/housemain1.png", 0.0f, scale),
-      new Gamelayer("resource/texture/fountain&bush.png", 0.0f, scale),
-      new Gamelayer("resource/texture/policebox.png", 0.0f, scale),
-      new Gamelayer("resource/texture/mainroad.png", 0.0f, scale)};
+  // Main Game Layers with validation
+  if (FileExists("resource/texture/mainsky.png"))
+    mainlayers.push_back(new Gamelayer("resource/texture/mainsky.png", 0.0f, scale));
+  if (FileExists("resource/texture/housemain2.png"))
+    mainlayers.push_back(new Gamelayer("resource/texture/housemain2.png", 0.0f, scale));
+  if (FileExists("resource/texture/housemain.png"))
+    mainlayers.push_back(new Gamelayer("resource/texture/housemain.png", 0.0f, scale));
+  if (FileExists("resource/texture/housemain1.png"))
+    mainlayers.push_back(new Gamelayer("resource/texture/housemain1.png", 0.0f, scale));
+  if (FileExists("resource/texture/fountain&bush.png"))
+    mainlayers.push_back(new Gamelayer("resource/texture/fountain&bush.png", 0.0f, scale));
+  if (FileExists("resource/texture/policebox.png"))
+    mainlayers.push_back(new Gamelayer("resource/texture/policebox.png", 0.0f, scale));
+  if (FileExists("resource/texture/mainroad.png"))
+    mainlayers.push_back(new Gamelayer("resource/texture/mainroad.png", 0.0f, scale));
 
-  // Buttons
-  startButton = new Button("resource/texture/button1.png", "resource/texture/button2.png", "resource/texture/button3.png", scale * 5.0f, true, 70.0f);
-  exitButton = new Button("resource/texture/exit1.png", "resource/texture/exit2.png", "resource/texture/exit3.png", scale * 5.0f, true, 160.0f);
-  yesButton = new Button("resource/texture/yes.png", "resource/texture/yes2.png", "resource/texture/yes3.png", 2.5f);
-  noButton = new Button("resource/texture/no.png", "resource/texture/no2.png", "resource/texture/no3.png", 2.5f);
+  // Buttons with validation
+  if (FileExists("resource/texture/button1.png"))
+  {
+    startButton = new Button("resource/texture/button1.png", "resource/texture/button2.png", "resource/texture/button3.png", scale * 5.0f, true, 70.0f);
+  }
+  if (FileExists("resource/texture/exit1.png"))
+  {
+    exitButton = new Button("resource/texture/exit1.png", "resource/texture/exit2.png", "resource/texture/exit3.png", scale * 5.0f, true, 160.0f);
+  }
+  if (FileExists("resource/texture/yes.png"))
+  {
+    yesButton = new Button("resource/texture/yes.png", "resource/texture/yes2.png", "resource/texture/yes3.png", 2.5f);
+  }
+  if (FileExists("resource/texture/no.png"))
+  {
+    noButton = new Button("resource/texture/no.png", "resource/texture/no2.png", "resource/texture/no3.png", 2.5f);
+  }
 
-  settingIcon = new SettingMenu("resource/texture/gear.png", "resource/texture/gearHover.png", "resource/texture/gearClick.png", 1.0f, true, true);
-  resumeButton = new Button("resource/texture/resume1.png",
-                            "resource/texture/resume2.png",
-                            "resource/texture/resume3.png",
-                            2.5f, true, 0.0f);
-  backToMenuButton = new Button("resource/texture/menu1.png", "resource/texture/menu2.png", "resource/texture/menu3.png", 2.5f, true, 0.0f);
+  if (FileExists("resource/texture/gear.png"))
+  {
+    settingIcon = new SettingMenu("resource/texture/gear.png", "resource/texture/gearHover.png", "resource/texture/gearClick.png", 1.0f, true, true);
+  }
+  if (FileExists("resource/texture/resume1.png"))
+  {
+    resumeButton = new Button("resource/texture/resume1.png",
+                              "resource/texture/resume2.png",
+                              "resource/texture/resume3.png",
+                              2.5f, true, 0.0f);
+  }
+  if (FileExists("resource/texture/menu1.png"))
+  {
+    backToMenuButton = new Button("resource/texture/menu1.png", "resource/texture/menu2.png", "resource/texture/menu3.png", 2.5f, true, 0.0f);
+  }
 
   // Init state helpers
   frameCounter = 0;
@@ -108,12 +161,14 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
 
   popup = Popup();
 
-  PlayMusicStream(backgroundMusic);
+  if (!IsMusicStreamPlaying(backgroundMusic))
+  {
+    PlayMusicStream(backgroundMusic);
+  }
 
   SpawnBots(4);
 }
 
-// Add the missing CountBotsByType function
 int Controller::CountBotsByType(BotType type) const
 {
   int count = 0;
@@ -135,6 +190,9 @@ void Controller::SpawnBots(int count)
     delete bot;
   }
   bots.clear();
+
+  if (!player)
+    return;
 
   Vector2 playerPos = {player->GetX(), player->GetY()};
 
@@ -173,6 +231,7 @@ void Controller::SpawnBots(int count)
     {
       newBot->LoadTextures();
       newBot->SetProperties();
+
       bots.push_back(newBot);
     }
   }
@@ -183,7 +242,7 @@ Vector2 Controller::GetSafeSpawnPosition(Vector2 playerPos, float minDistance)
   Vector2 spawnPos;
   int attempts = 0;
   const int maxAttempts = 50;
-  const float GROUND_LEVEL = 470.0f; // Match your player's ground level
+  const float GROUND_LEVEL = 500.1f; // Match your player's ground level
 
   do
   {
@@ -265,34 +324,46 @@ void Controller::Draw()
 
 void Controller::UpdateMenu()
 {
-  UpdateMusicStream(backgroundMusic);
-
-  if (!menuMusicStarted)
+  if (IsMusicStreamPlaying(backgroundMusic))
   {
-    PlayMusicStream(backgroundMusic);
-    menuMusicStarted = true;
-    playingMusicStarted = false;
+    UpdateMusicStream(backgroundMusic);
+
+    if (!menuMusicStarted)
+    {
+      PlayMusicStream(backgroundMusic);
+      menuMusicStarted = true;
+      playingMusicStarted = false;
+    }
   }
+
   for (Layer *layer : menuLayers)
-    layer->Update();
+    if (layer)
+      layer->Update();
 
   if (!showExitPop)
   {
-    startButton->Update();
-    exitButton->Update();
-
-    if (startButton->IsClicked())
+    if (startButton)
     {
-      PlaySound(clickSound);
-      currentState = Gamestate::GAME;
-      gameTimer = 0;
-      fadeOutComplete = false;
+      startButton->Update();
+      if (startButton->IsClicked())
+      {
+        if (IsSoundValid(clickSound))
+          PlaySound(clickSound);
+        currentState = Gamestate::GAME;
+        gameTimer = 0;
+        fadeOutComplete = false;
+      }
     }
 
-    if (exitButton->IsClicked())
+    if (exitButton)
     {
-      PlaySound(clickSound);
-      showExitPop = true;
+      exitButton->Update();
+      if (exitButton->IsClicked())
+      {
+        if (IsSoundValid(clickSound))
+          PlaySound(clickSound);
+        showExitPop = true;
+      }
     }
   }
 }
@@ -300,7 +371,8 @@ void Controller::UpdateMenu()
 void Controller::UpdateGame()
 {
   for (Layer *layer : gameLayers)
-    layer->Update();
+    if (layer)
+      layer->Update();
 
   frameCounter++;
   if (frameCounter >= 30)
@@ -313,13 +385,16 @@ void Controller::UpdateGame()
   if (!fadeOutComplete)
   {
     gameTimer++;
-    float volume = 1.0f - (float)gameTimer / fadeDuration;
-    SetMusicVolume(backgroundMusic, volume < 0 ? 0 : volume);
+    if (IsMusicStreamPlaying(backgroundMusic))
+    {
+      float volume = 1.0f - (float)gameTimer / fadeDuration;
+      SetMusicVolume(backgroundMusic, volume < 0 ? 0 : volume);
+    }
 
     if (gameTimer >= fadeDuration)
     {
       fadeOutComplete = true;
-      SpawnBots(4); // Spawn bots when transitioning to playing state
+      SpawnBots(4);
       currentState = Gamestate::PLAYING;
     }
   }
@@ -327,13 +402,16 @@ void Controller::UpdateGame()
 
 void Controller::UpdatePlaying()
 {
-  // Handle settings popup first
-  settingIcon->Update();
-  if (settingIcon->WasClicked())
+  if (settingIcon)
   {
-    PlaySound(clickSound);
-    showSettingsPopup = true;
-    return;
+    settingIcon->Update();
+    if (settingIcon->WasClicked())
+    {
+      if (IsSoundValid(clickSound))
+        PlaySound(clickSound);
+      showSettingsPopup = true;
+      return;
+    }
   }
 
   if (showSettingsPopup)
@@ -342,18 +420,42 @@ void Controller::UpdatePlaying()
   }
 
   // Update player
-  player->HandleInput();
-  player->Update();
+  if (player)
+  {
+    player->HandleInput();
+    player->Update();
+  }
 
-  Vector2 playerPos = {player->GetX(), player->GetY()};
+  Vector2 playerPos = player ? Vector2{player->GetX(), player->GetY()} : Vector2{0, 0};
   float deltaTime = GetFrameTime();
-  float backgroundSpeed = player->GetCurrentMovementSpeed();
+  float backgroundSpeed = player ? player->GetCurrentMovementSpeed() : 0.0f;
 
   // Update background layers
   for (Gamelayer *main : mainlayers)
-    main->UpdateLayer(backgroundSpeed);
+    if (main)
+      main->UpdateLayer(backgroundSpeed);
 
-  // Update bot AI and interactions
+  // FIXED: Update bot positions to sync with background movement
+  // This ensures bots move at the same pace as the background
+  for (Bot *bot : bots)
+  {
+    if (bot && bot->IsAlive())
+    {
+      // Adjust bot position based on background movement
+      // If player is moving right (positive speed), bots should move left relative to screen
+      bot->x -= backgroundSpeed * deltaTime;
+
+      // Keep bots within reasonable screen bounds, respawn if they go too far off-screen
+      if (bot->x < -200 || bot->x > GetScreenWidth() + 200)
+      {
+        // Mark for respawn or reposition
+        Vector2 newPos = GetSafeSpawnPosition(playerPos, SPAWN_SAFE_DISTANCE);
+        bot->x = newPos.x;
+        bot->y = newPos.y;
+      }
+    }
+  }
+
   UpdateBotAI(playerPos, deltaTime);
 
   HandleBotPlayerInteractions(playerPos);
@@ -363,19 +465,22 @@ void Controller::UpdatePlaying()
   CleanupAndRespawnBots();
 
   // Update music
-  if (!playingMusicStarted)
+  if (!playingMusicStarted && !IsMusicStreamPlaying(playingMusic))
   {
-    StopMusicStream(backgroundMusic);
+    if (IsMusicStreamPlaying(backgroundMusic))
+      StopMusicStream(backgroundMusic);
     PlayMusicStream(playingMusic);
     SetMusicVolume(playingMusic, 0.5f);
     playingMusicStarted = true;
   }
-  UpdateMusicStream(playingMusic);
+  if (IsMusicStreamPlaying(playingMusic))
+  {
+    UpdateMusicStream(playingMusic);
+  }
 }
 
 void Controller::UpdateBotAI(Vector2 playerPos, float deltaTime)
 {
-  // Create a vector of bot pointers for AI updates
   std::vector<Bot *> aliveBots;
   for (Bot *bot : bots)
   {
@@ -385,37 +490,43 @@ void Controller::UpdateBotAI(Vector2 playerPos, float deltaTime)
     }
   }
 
-  // Update each bot's AI with knowledge of all other bots
   for (Bot *bot : aliveBots)
   {
-    bot->Update();
-
-    // The key E-SWAT integration happens here
-    bot->UpdateAI(playerPos, deltaTime, aliveBots);
-
-    // Update bot-specific behaviors
-    UpdateBotSpecificBehavior(bot, playerPos, deltaTime, aliveBots);
+    if (bot)
+    {
+      bot->Update();
+      bot->UpdateAI(playerPos, deltaTime, aliveBots);
+      // Update bot-specific behaviors
+      UpdateBotSpecificBehavior(bot, playerPos, deltaTime, aliveBots);
+    }
   }
 }
 
 void Controller::DrawMenu()
 {
   for (Layer *layer : menuLayers)
-    layer->Draw();
+    if (layer)
+      layer->Draw();
 
-  startButton->Draw();
-  exitButton->Draw();
+  if (startButton)
+    startButton->Draw();
+  if (exitButton)
+    exitButton->Draw();
 
-  DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
+  if (titleTexture.id > 0)
+  {
+    DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
+  }
 
-  if (showExitPop)
+  if (showExitPop && yesButton && noButton)
     popup.DrawExitPopup(running, showExitPop, clickSound, *yesButton, *noButton);
 }
 
 void Controller::DrawGame()
 {
   for (Layer *layer : gameLayers)
-    layer->Draw();
+    if (layer)
+      layer->Draw();
 
   DrawTextOutlined(animatedText.c_str(), 350, 270, 40, WHITE, BLACK);
 
@@ -429,6 +540,9 @@ void Controller::DrawGame()
 void Controller::UpdateBotSpecificBehavior(Bot *bot, Vector2 playerPos,
                                            float deltaTime, const std::vector<Bot *> &allBots)
 {
+  if (!bot)
+    return;
+
   switch (bot->GetBotType())
   {
   case BotType::CIVILIAN:
@@ -448,7 +562,6 @@ void Controller::UpdateBotSpecificBehavior(Bot *bot, Vector2 playerPos,
   case BotType::GANGSTER:
   {
     GangsterBot *gang = static_cast<GangsterBot *>(bot);
-
     gang->ExecuteESWATTactics(playerPos, deltaTime, allBots);
     break;
   }
@@ -497,6 +610,9 @@ void Controller::HandleBotPlayerInteractions(Vector2 playerPos)
 
 void Controller::HandlePlayerDamage(Bot *attackingBot)
 {
+  if (!attackingBot)
+    return;
+
   // Implement player damage system here
   float damage = 0.0f;
 
@@ -551,6 +667,9 @@ void Controller::HandleBotInteractions()
 
 void Controller::HandleBotPairInteraction(Bot *bot1, Bot *bot2, float distance)
 {
+  if (!bot1 || !bot2)
+    return;
+
   BotType type1 = bot1->GetBotType();
   BotType type2 = bot2->GetBotType();
 
@@ -573,7 +692,7 @@ void Controller::CleanupAndRespawnBots()
   auto it = std::remove_if(bots.begin(), bots.end(),
                            [](Bot *bot)
                            {
-                             if (!bot->IsAlive())
+                             if (!bot || !bot->IsAlive())
                              {
                                delete bot;
                                return true;
@@ -591,7 +710,6 @@ void Controller::CleanupAndRespawnBots()
   }
 }
 
-// Fixed GetBotTypeName function - removed ESWAT case
 const char *Controller::GetBotTypeName(BotType type)
 {
   switch (type)
@@ -607,7 +725,6 @@ const char *Controller::GetBotTypeName(BotType type)
   }
 }
 
-// Add the missing GetBotStateText function
 const char *Controller::GetBotStateText(BotState state)
 {
   switch (state)
@@ -643,19 +760,21 @@ void Controller::DrawPlaying()
 {
   // Draw background layers
   for (Gamelayer *main : mainlayers)
-    main->Drawlayer();
+    if (main)
+      main->Drawlayer();
 
   // Draw bots with tactical indicators
   DrawBotsWithTacticalInfo();
-
   // Draw player
-  player->Draw();
+  if (player)
+    player->Draw();
 
   // Draw UI elements
-  settingIcon->Draw();
+  if (settingIcon)
+    settingIcon->Draw();
   DrawBotStatusHUD();
 
-  if (showSettingsPopup)
+  if (showSettingsPopup && resumeButton && backToMenuButton)
   {
     settingpop.DrawSettingPopup(showSettingsPopup, clickSound,
                                 *resumeButton, *backToMenuButton, currentState);
@@ -681,6 +800,9 @@ void Controller::DrawBotsWithTacticalInfo()
 
 void Controller::DrawBotTacticalInfo(Bot *bot)
 {
+  if (!bot)
+    return;
+
   Vector2 botPos = {bot->x, bot->y};
 
   // Draw detection range (semi-transparent circle)
@@ -761,8 +883,12 @@ void Controller::Unload()
   yesButton = nullptr;
   noButton = nullptr;
 
-  UnloadTexture(titleTexture);
-  UnloadSound(clickSound);
-  UnloadMusicStream(backgroundMusic);
-  UnloadMusicStream(playingMusic);
+  if (titleTexture.id > 0)
+    UnloadTexture(titleTexture);
+  if (IsSoundValid(clickSound))
+    UnloadSound(clickSound);
+  if (IsMusicStreamPlaying(backgroundMusic))
+    UnloadMusicStream(backgroundMusic);
+  if (IsMusicStreamPlaying(playingMusic))
+    UnloadMusicStream(playingMusic);
 }
