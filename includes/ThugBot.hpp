@@ -1,34 +1,26 @@
 #pragma once
-#include "includes/Bot.hpp"
+#include "Bot.hpp"
 
-class ThugBot : public Bot
+class StreetThugBot : public Bot
 {
 public:
-  ThugBot(float startX, float startY);
-  virtual ~ThugBot() = default;
+  // Constructor - calls base Bot constructor
+  StreetThugBot(float spawnX, float spawnY);
 
-  // Override virtual methods
+  // Destructor
+  ~StreetThugBot();
+
+  // OVERRIDE base class virtual methods
+  void UpdateAI(Vector2 playerPos, float deltaTime) override;
   void LoadTextures() override;
-  void SetProperties() override;
-  BotType GetBotType() const override { return BotType::THUG; }
 
-  // Thug-specific behavior overrides
-  void UpdateAI(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots) override;
-  void Attack() override;
-
-  // Override E-SWAT tactics for thug-specific behavior
-  void ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots) override;
-  virtual void ExecutePositioning(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
+  // StreetThug-specific methods
+  void BerserkMode();
+  void CallForBackup();
 
 private:
-  // Thug-specific properties
-  static constexpr float THUG_AGGRESSION_MULTIPLIER = 1.2f;
-  static constexpr float THUG_CHASE_SPEED_BOOST = 1.1f;
-  static constexpr float THUG_PACK_DETECTION_RANGE = 300.0f;
-  static constexpr int THUG_MIN_PACK_SIZE = 2; // Minimum thugs needed for coordinated tactics
-
-  // Thug-specific methods
-  int CountNearbyThugs(const std::vector<Bot *> &otherBots) const;
-  void ExecutePackTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots);
-  void ExecuteIndividualBehavior(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots);
+  // StreetThug-specific properties
+  bool isBerserk;
+  float berserkTimer;
+  int backupCallCount;
 };

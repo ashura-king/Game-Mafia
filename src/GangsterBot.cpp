@@ -3,26 +3,41 @@
 GangsterBot::GangsterBot(float startX, float startY) : Bot(startX, startY)
 {
   type = BotType::GANGSTER;
-  SetProperties();
+  frameWidth = 128.0f;
+  frameHeight = 128.0f;
+
   LoadTextures();
+  SetProperties();
 }
 
 void GangsterBot::LoadTextures()
 {
-  idleTexture = LoadTexture("resource/gangster/idle.png");
-  walkTexture = LoadTexture("resource/gangster/walk.png");
-  runTexture = LoadTexture("resource/gangster/run.png");
+  idleTexture = LoadTexture("resource/gangster/gangsterIdle.png");
+  idleLeftTexture = LoadTexture("resource/gangster/gangsterIdle2.png");
+  walkTexture = LoadTexture("resource/gangster/gangsterWalk.png");
+  runTexture = LoadTexture("resource/gangster/gangsterRun.png");
+  attackTexture = LoadTexture("resource/gangster/gangsterAttack.png");
+
+  idleRightAnim = {0, 7, 0, 0.25f, 0.25f, 1, AnimationType::REPEATING};
+  idleLeftAnim = {0, 7, 0, 0.25f, 0.25f, 1, AnimationType::REPEATING};
+  walkAnim = {0, 9, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
+  runAnim = {0, 9, 0, 0.1f, 0.1f, 1, AnimationType::REPEATING};
+  attackAnim = {0, 4, 0, 0.12f, 0.12f, 1, AnimationType::ONESHOT};
+
   isLoaded = true;
 }
 
 void GangsterBot::SetProperties()
 {
-  speed = 105.0f;
+  height = frameHeight;
+  width = frameWidth;
+  speed = 90.0f;
   health = 100;
   maxHealth = 100;
-  chaseRange = 260.0f;
-  attackRange = 55.0f;
-  fleeingRange = 180.0f;
+  chaseRange = 100.0f;
+  attackRange = 35.0f;
+  fleeingRange = 90.0f;
+
   attackCooldown = 0.7f;
   spawnDelay = 1.0f;
 }
@@ -79,7 +94,7 @@ void GangsterBot::PositionLikeGang(Vector2 playerPos, float deltaTime, const std
 
   x += dir.x * speed * deltaTime;
   UpdateDirection(dir);
-  SetState(BotState::TACTICAL_POSITIONING);
+  SetState(BotState::PATROLLING);
 
   if (Vector2Distance({x, y}, tacticalTarget) < 50.0f && tacticalTimer > 1.0f)
   {
@@ -90,7 +105,7 @@ void GangsterBot::PositionLikeGang(Vector2 playerPos, float deltaTime, const std
 
 void GangsterBot::GangAssault(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots)
 {
-  SetState(BotState::COORDINATED_ATTACK);
+  SetState(BotState::ATTACK);
 
   Vector2 dir = Vector2Normalize(Vector2Subtract(playerPos, {x, y}));
   float dist = Vector2Distance({x, y}, playerPos);

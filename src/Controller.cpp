@@ -165,122 +165,37 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   {
     PlayMusicStream(backgroundMusic);
   }
-
-  SpawnBots(4);
-}
-
-int Controller::CountBotsByType(BotType type) const
-{
-  int count = 0;
-  for (const Bot *bot : bots)
-  {
-    if (bot && bot->GetBotType() == type)
-    {
-      count++;
-    }
-  }
-  return count;
 }
 
 void Controller::SpawnBots(int count)
 {
-  // Clear existing bots
-  for (Bot *bot : bots)
-  {
-    delete bot;
-  }
-  bots.clear();
-
-  if (!player)
-    return;
-
-  Vector2 playerPos = {player->GetX(), player->GetY()};
-
-  // Spawn different types of bots with balanced distribution
   for (int i = 0; i < count; i++)
   {
-    Vector2 spawnPos = GetSafeSpawnPosition(playerPos, SPAWN_SAFE_DISTANCE);
-    Bot *newBot = nullptr;
-
-    // Distribute bot types evenly (now: CIVILIAN, THUG, GANGSTER)
-    int botTypeIndex = i % 3;
-
-    switch (botTypeIndex)
-    {
-    case 0:
-      if (CountBotsByType(BotType::CIVILIAN) < MAX_BOTS_PER_TYPE)
-      {
-        newBot = new CivilianBot(spawnPos.x, spawnPos.y);
-      }
-      break;
-    case 1:
-      if (CountBotsByType(BotType::THUG) < MAX_BOTS_PER_TYPE)
-      {
-        newBot = new ThugBot(spawnPos.x, spawnPos.y);
-      }
-      break;
-    case 2:
-      if (CountBotsByType(BotType::GANGSTER) < MAX_BOTS_PER_TYPE)
-      {
-        newBot = new GangsterBot(spawnPos.x, spawnPos.y);
-      }
-      break;
-    }
-
-    if (newBot)
-    {
-      newBot->LoadTextures();
-      newBot->SetProperties();
-
-      bots.push_back(newBot);
-    }
+    Vector2 pos = {150 + i * 100, 500};
+    BotType type = GetNextBotType();
+    Bot *bot = CreateBot(type, pos);
+    bot->LoadTextures();
+    bots.push_back(bot);
   }
 }
 
-Vector2 Controller::GetSafeSpawnPosition(Vector2 playerPos, float minDistance)
+Bot *Controller::CreateBot(BotType type, Vector2 pos)
 {
-  Vector2 spawnPos;
-  int attempts = 0;
-  const int maxAttempts = 50;
-  const float GROUND_LEVEL = 500.1f; // Match your player's ground level
-
-  do
+  switch (type)
   {
-    // Only randomize X position, keep Y at ground level
-    spawnPos.x = GetRandomValue(100, GetScreenWidth() - 100);
-    spawnPos.y = GROUND_LEVEL; // Fixed Y position
-    attempts++;
-
-    if (attempts >= maxAttempts)
-    {
-      // Fallback: spawn at screen edges horizontally
-      spawnPos.x = (GetRandomValue(0, 1) == 0) ? 50 : GetScreenWidth() - 50;
-      spawnPos.y = GROUND_LEVEL;
-      break;
-    }
-  } while (Vector2Distance(spawnPos, playerPos) < minDistance ||
-           IsPositionOccupied(spawnPos));
-
-  return spawnPos;
-}
-
-bool Controller::IsPositionOccupied(Vector2 position)
-{
-  const float minBotDistance = 80.0f;
-
-  for (const Bot *bot : bots)
-  {
-    if (bot)
-    {
-      // Only check horizontal distance
-      float horizontalDistance = fabs(position.x - bot->x);
-      if (horizontalDistance < minBotDistance)
-      {
-        return true;
-      }
-    }
+  case BotType::SHOOTER:
+    return new ShooterBot(pos.x, pos.y);
+  case BotType::BRAWLER:
+    return new BrawlerBot(pos.x, pos.y);
+  case BotType::HEAVY:
+    return new HeavyBot(pos.x, pos.y);
+  case BotType::THROWER:
+    return new ThrowerBot(pos.x, pos.y);
+  case BotType::RUSHER:
+    return new RusherBot(pos.x, pos.y);
+  default:
+    return nullptr;
   }
-  return false;
 }
 
 void Controller::Update()
@@ -402,6 +317,8 @@ void Controller::UpdateGame()
 
 void Controller::UpdatePlaying()
 {
+
+  playSessionTime += GetFrameTime;
   if (settingIcon)
   {
     settingIcon->Update();
@@ -413,13 +330,19 @@ void Controller::UpdatePlaying()
       return;
     }
   }
-
+  for (Bot *bot : bot)
+  {
+    if (bot && bot->IsAlive())
+    {
+      bot->Update(deltaTime);
+      bot->UpdateAI(playerPos, deltaTime);
+    }
+  }
   if (showSettingsPopup)
   {
     return;
   }
 
-  // Update player
   if (player)
   {
     player->HandleInput();
@@ -435,35 +358,6 @@ void Controller::UpdatePlaying()
     if (main)
       main->UpdateLayer(backgroundSpeed);
 
-  // FIXED: Update bot positions to sync with background movement
-  // This ensures bots move at the same pace as the background
-  for (Bot *bot : bots)
-  {
-    if (bot && bot->IsAlive())
-    {
-      // Adjust bot position based on background movement
-      // If player is moving right (positive speed), bots should move left relative to screen
-      bot->x -= backgroundSpeed * deltaTime;
-
-      // Keep bots within reasonable screen bounds, respawn if they go too far off-screen
-      if (bot->x < -200 || bot->x > GetScreenWidth() + 200)
-      {
-        // Mark for respawn or reposition
-        Vector2 newPos = GetSafeSpawnPosition(playerPos, SPAWN_SAFE_DISTANCE);
-        bot->x = newPos.x;
-        bot->y = newPos.y;
-      }
-    }
-  }
-
-  UpdateBotAI(playerPos, deltaTime);
-
-  HandleBotPlayerInteractions(playerPos);
-
-  HandleBotInteractions();
-
-  CleanupAndRespawnBots();
-
   // Update music
   if (!playingMusicStarted && !IsMusicStreamPlaying(playingMusic))
   {
@@ -477,28 +371,14 @@ void Controller::UpdatePlaying()
   {
     UpdateMusicStream(playingMusic);
   }
-}
 
-void Controller::UpdateBotAI(Vector2 playerPos, float deltaTime)
-{
-  std::vector<Bot *> aliveBots;
-  for (Bot *bot : bots)
-  {
-    if (bot && bot->IsAlive() && bot->IsSpawned())
-    {
-      aliveBots.push_back(bot);
-    }
-  }
+  static float spawnTimer = 0.0f;
+  spawnTimer += GetFrameTime();
 
-  for (Bot *bot : aliveBots)
+  if (spawnTimer >= 20.0f && bots.size() < 6)
   {
-    if (bot)
-    {
-      bot->Update();
-      bot->UpdateAI(playerPos, deltaTime, aliveBots);
-      // Update bot-specific behaviors
-      UpdateBotSpecificBehavior(bot, playerPos, deltaTime, aliveBots);
-    }
+    SpawnBots(1); // add 1 bot
+    spawnTimer = 0.0f;
   }
 }
 
@@ -537,225 +417,6 @@ void Controller::DrawGame()
   }
 }
 
-void Controller::UpdateBotSpecificBehavior(Bot *bot, Vector2 playerPos,
-                                           float deltaTime, const std::vector<Bot *> &allBots)
-{
-  if (!bot)
-    return;
-
-  switch (bot->GetBotType())
-  {
-  case BotType::CIVILIAN:
-  {
-    CivilianBot *civilian = static_cast<CivilianBot *>(bot);
-    if (civilian->IsNearDanger(player->GetPosition(), allBots))
-    {
-      civilian->ExecutePanicBehavior(player->GetPosition(), GetFrameTime(), bots);
-    }
-    else
-    {
-      civilian->SetState(BotState::IDLE);
-    }
-    break;
-  }
-
-  case BotType::GANGSTER:
-  {
-    GangsterBot *gang = static_cast<GangsterBot *>(bot);
-    gang->ExecuteESWATTactics(playerPos, deltaTime, allBots);
-    break;
-  }
-
-  case BotType::THUG:
-  {
-    ThugBot *thug = static_cast<ThugBot *>(bot);
-    thug->UpdateAI(player->GetPosition(), GetFrameTime(), bots);
-    break;
-  }
-  }
-}
-
-void Controller::HandleBotPlayerInteractions(Vector2 playerPos)
-{
-  const float INTERACTION_RANGE = 50.0f;
-
-  for (Bot *bot : bots)
-  {
-    if (!bot || !bot->IsAlive())
-      continue;
-
-    float distance = Vector2Distance({bot->x, bot->y}, playerPos);
-
-    if (distance <= INTERACTION_RANGE)
-    {
-      switch (bot->GetBotType())
-      {
-      case BotType::THUG:
-      case BotType::GANGSTER:
-        // Handle combat interaction
-        if (bot->CanAttack())
-        {
-          bot->Attack();
-          HandlePlayerDamage(bot);
-        }
-        break;
-
-      case BotType::CIVILIAN:
-        // Civilians just panic and flee - no damage
-        break;
-      }
-    }
-  }
-}
-
-void Controller::HandlePlayerDamage(Bot *attackingBot)
-{
-  if (!attackingBot)
-    return;
-
-  // Implement player damage system here
-  float damage = 0.0f;
-
-  switch (attackingBot->GetBotType())
-  {
-  case BotType::THUG:
-    damage = 15.0f;
-    break;
-  case BotType::GANGSTER:
-    damage = 20.0f; // SWAT is more precise
-    break;
-  default:
-    damage = 0.0f;
-    break;
-  }
-
-  if (damage > 0.0f)
-  {
-    // Apply damage to player
-    // player->TakeDamage(damage);
-
-    // Play damage sound effect
-    // PlaySound(playerHitSound);
-
-    TraceLog(LOG_INFO, "Player took %.1f damage from %s",
-             damage, GetBotTypeName(attackingBot->GetBotType()));
-  }
-}
-
-void Controller::HandleBotInteractions()
-{
-  // Handle bot-to-bot interactions (friendly fire, coordination, etc.)
-  for (size_t i = 0; i < bots.size(); ++i)
-  {
-    for (size_t j = i + 1; j < bots.size(); ++j)
-    {
-      Bot *bot1 = bots[i];
-      Bot *bot2 = bots[j];
-
-      if (!bot1 || !bot2 || !bot1->IsAlive() || !bot2->IsAlive())
-        continue;
-
-      float distance = Vector2Distance({bot1->x, bot1->y}, {bot2->x, bot2->y});
-
-      if (distance <= BOT_INTERACTION_RANGE)
-      {
-        HandleBotPairInteraction(bot1, bot2, distance);
-      }
-    }
-  }
-}
-
-void Controller::HandleBotPairInteraction(Bot *bot1, Bot *bot2, float distance)
-{
-  if (!bot1 || !bot2)
-    return;
-
-  BotType type1 = bot1->GetBotType();
-  BotType type2 = bot2->GetBotType();
-
-  // Civilians panic when near hostile bots
-  if (type1 == BotType::CIVILIAN && (type2 == BotType::THUG || type2 == BotType::GANGSTER))
-  {
-    CivilianBot *civilian = static_cast<CivilianBot *>(bot1);
-    civilian->SetState(BotState::FLEEING);
-  }
-  else if (type2 == BotType::CIVILIAN && (type1 == BotType::THUG || type1 == BotType::GANGSTER))
-  {
-    CivilianBot *civilian = static_cast<CivilianBot *>(bot2);
-    civilian->SetState(BotState::FLEEING);
-  }
-}
-
-void Controller::CleanupAndRespawnBots()
-{
-  // Remove dead bots
-  auto it = std::remove_if(bots.begin(), bots.end(),
-                           [](Bot *bot)
-                           {
-                             if (!bot || !bot->IsAlive())
-                             {
-                               delete bot;
-                               return true;
-                             }
-                             return false;
-                           });
-  bots.erase(it, bots.end());
-
-  // Respawn bots if too few remain
-  const int MIN_BOTS = 3;
-  if (bots.size() < MIN_BOTS)
-  {
-    int botsToSpawn = MIN_BOTS - bots.size();
-    SpawnBots(botsToSpawn);
-  }
-}
-
-const char *Controller::GetBotTypeName(BotType type)
-{
-  switch (type)
-  {
-  case BotType::CIVILIAN:
-    return "Civilian";
-  case BotType::GANGSTER:
-    return "SWAT";
-  case BotType::THUG:
-    return "Thug";
-  default:
-    return "Unknown";
-  }
-}
-
-const char *Controller::GetBotStateText(BotState state)
-{
-  switch (state)
-  {
-  case BotState::IDLE:
-    return "IDLE";
-  case BotState::WANDERING:
-    return "WANDERING";
-  case BotState::CHASING:
-    return "CHASING";
-  case BotState::ATTACK:
-    return "ATTACKING";
-  case BotState::FLEEING:
-    return "FLEEING";
-  case BotState::DEAD:
-    return "DEAD";
-  case BotState::SPAWNING:
-    return "SPAWNING";
-  case BotState::PATROLLING:
-    return "PATROLLING";
-  case BotState::TACTICAL_POSITIONING:
-    return "POSITIONING";
-  case BotState::COORDINATED_ATTACK:
-    return "COORD_ATTACK";
-  case BotState::RETREATING:
-    return "RETREATING";
-  default:
-    return "UNKNOWN";
-  }
-}
-
 void Controller::DrawPlaying()
 {
   // Draw background layers
@@ -763,90 +424,26 @@ void Controller::DrawPlaying()
     if (main)
       main->Drawlayer();
 
-  // Draw bots with tactical indicators
-  DrawBotsWithTacticalInfo();
-  // Draw player
   if (player)
     player->Draw();
+
+  for (Bot *bot : bots)
+  {
+    if (bot && bot->IsAlive())
+    {
+      bot->Draw()
+    }
+  }
 
   // Draw UI elements
   if (settingIcon)
     settingIcon->Draw();
-  DrawBotStatusHUD();
 
   if (showSettingsPopup && resumeButton && backToMenuButton)
   {
     settingpop.DrawSettingPopup(showSettingsPopup, clickSound,
                                 *resumeButton, *backToMenuButton, currentState);
   }
-}
-
-void Controller::DrawBotsWithTacticalInfo()
-{
-  for (Bot *bot : bots)
-  {
-    if (!bot || !bot->IsAlive())
-      continue;
-
-    bot->Draw();
-
-    // Draw tactical information for debugging/visual feedback
-    if (bot->GetBotType() != BotType::CIVILIAN)
-    {
-      DrawBotTacticalInfo(bot);
-    }
-  }
-}
-
-void Controller::DrawBotTacticalInfo(Bot *bot)
-{
-  if (!bot)
-    return;
-
-  Vector2 botPos = {bot->x, bot->y};
-
-  // Draw detection range (semi-transparent circle)
-  if (bot->GetBotType() == BotType::GANGSTER)
-  {
-    DrawCircleLines(botPos.x, botPos.y, 250.0f, Fade(BLUE, 0.3f));
-  }
-  else if (bot->GetBotType() == BotType::THUG)
-  {
-    DrawCircleLines(botPos.x, botPos.y, 180.0f, Fade(RED, 0.3f));
-  }
-
-  // Draw state information
-  const char *stateText = GetBotStateText(bot->GetState());
-  DrawText(stateText, botPos.x - 20, botPos.y - 30, 10, WHITE);
-}
-
-void Controller::DrawBotStatusHUD()
-{
-  // Draw bot count and status in corner
-  int civilians = 0, swat = 0, thugs = 0;
-
-  for (Bot *bot : bots)
-  {
-    if (!bot || !bot->IsAlive())
-      continue;
-
-    switch (bot->GetBotType())
-    {
-    case BotType::CIVILIAN:
-      civilians++;
-      break;
-    case BotType::GANGSTER:
-      swat++;
-      break;
-    case BotType::THUG:
-      thugs++;
-      break;
-    }
-  }
-
-  DrawText(TextFormat("Civilians: %d", civilians), 10, 10, 20, GREEN);
-  DrawText(TextFormat("SWAT: %d", swat), 10, 35, 20, BLUE);
-  DrawText(TextFormat("Thugs: %d", thugs), 10, 60, 20, RED);
 }
 
 void Controller::Unload()
@@ -862,12 +459,8 @@ void Controller::Unload()
   for (Gamelayer *main : mainlayers)
     delete main;
   mainlayers.clear();
-
-  // Clean up bots
   for (Bot *bot : bots)
-  {
     delete bot;
-  }
   bots.clear();
 
   delete player;

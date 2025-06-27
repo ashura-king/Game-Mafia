@@ -30,40 +30,24 @@ enum class CharacterState
 
 enum class BotType
 {
-  CIVILIAN,
-  THUG,
-  GANGSTER
-
+  STREET_THUG,
+  SHOOTER,
+  BRAWLER,
+  HEAVY,
+  THROWER,
+  RUSHER
 };
 enum class BotState
 {
-  IDLE,
-  WANDERING,
-  CHASING,
-  ATTACK,
-  FLEEING,
-  DEAD,
   SPAWNING,
-  PATROLLING,
-  TACTICAL_POSITIONING,
-  COORDINATED_ATTACK,
-  RETREATING
-};
-enum class TacticalRole
-{
-  DIRECT_ASSAULT, // Attacks head-on like E-SWAT front units
-  LEFT_FLANKER,   // Circles to attack from left
-  RIGHT_FLANKER,  // Circles to attack from right
-  REAR_AMBUSH,    // Moves behind for surprise attack
-  SUPPORT_FIRE    // Provides covering fire from distance
+  IDLE,
+  DIRECT_COMBAT,
+  RANGED_COMBAT,
+  STUNNED,
+  KNOCKED_DOWN,
+  DEAD
 };
 
-enum class TacticalPhase
-{
-  POSITIONING,        // Moving to tactical position
-  COORDINATED_ATTACK, // Synchronized attack phase
-  RETREAT_REGROUP
-};
 enum Direction
 {
   LEFT = -1,

@@ -25,7 +25,11 @@ void CivilianBot::LoadTextures()
   walkTexture = LoadTexture("resource/civillian/civilWalk.png");
   runTexture = LoadTexture("resource/civillian/civilRun.png");
 
-  // Call base class texture loading if needed
+  idleRightAnim = {0, 10, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
+  idleLeftAnim = {0, 5, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
+  walkAnim = {0, 7, 0, 0.15f, 0.15f, 1, AnimationType::REPEATING};
+  runAnim = {0, 7, 0, 0.1f, 0.1f, 1, AnimationType::REPEATING};
+
   Bot::LoadTextures();
 }
 

@@ -8,146 +8,275 @@
 class Bot
 {
 public:
-  Bot(float startX, float startY);
+  Bot(float spawnX, float spawnY, BotType botType = BotType::STREET_THUG);
   virtual ~Bot();
 
+  // Core lifecycle methods
   virtual void LoadTextures();
-  virtual void SetProperties();
-  virtual BotType GetBotType() const;
-
-  virtual void Update();
-  virtual void UpdateAI(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &otherBots);
+  virtual void Update(float deltaTime);
   virtual void Draw();
 
-  // Virtual movement/behavior (can be overridden)
-  virtual void ChasePlayer(Vector2 playerPos, const std::vector<Bot *> &otherBots);
-  virtual void Wander(float deltaTime, const std::vector<Bot *> &otherBots);
-  virtual void MoveTowards(Vector2 target);
-  virtual void MoveAway(Vector2 threat);
-  virtual void Patrol();
+  // Direct combat AI behaviors
+  virtual void UpdateAI(Vector2 playerPos, float deltaTime);
+  virtual void SpawnBehavior(float deltaTime);
+  virtual void DirectCombatBehavior(Vector2 playerPos, float deltaTime);
+  virtual void RangedCombatBehavior(Vector2 playerPos, float deltaTime);
+  virtual void IdleBehavior(float deltaTime);
 
-  // Virtual combat (e.g., override for civilians or advanced bots)
-  virtual void Attack();
+  // Direct movement patterns
+  virtual void RunTowardPlayer(Vector2 playerPos);
+  virtual void StopAndAttack(Vector2 playerPos);
+  virtual void PaceAround();
+  virtual void CallForGang();
+
+  // Combat system
+  virtual void Punch(Vector2 targetPos);
+  virtual void Kick(Vector2 targetPos);
+  virtual void Grab(Vector2 targetPos);
+  virtual void Shoot(Vector2 targetPos);       // firearms
+  virtual void ThrowWeapon(Vector2 targetPos); // bottles, pipes, etc.
+  virtual void Block();
   virtual void TakeDamage(int damage);
+  virtual void GetKnockedDown();
+  virtual void Die();
 
-  // State control
-  void SetState(BotState newState);
+  // Getters
+  BotType GetBotType() const { return type; }
   BotState GetState() const { return state; }
+  Vector2 GetPosition() const { return {x, y}; }
+  bool IsAlive() const { return health > 0 && !isKnockedOut; }
+  bool IsOnScreen() const;
+  bool IsReadyToFight() const { return isOnScreen && state != BotState::SPAWNING; }
+  bool CanAttack() const { return attackCooldown <= 0 && !isStunned; }
+  bool IsInAttackRange() const;
+  bool IsInShootRange() const;
 
-  // Combat conditions
-  bool CanAttack() const;
-
-  // Utility functions
-  float DistanceTo(Vector2 target) const;
-  bool IsPlayerInRange(Vector2 playerPosition, float range) const;
-  bool CheckCollisionWithPlayer(Vector2 playerPos, float playerWidth, float playerHeight);
-  bool IsAlive() const { return health > 0; }
-  bool IsSpawned() const { return isSpawned; }
-
-  // Collision with other bots
-  bool WouldCollideWithBots(Vector2 position, const std::vector<Bot *> &otherBots) const;
-  Vector2 GetAvoidanceDirection(Vector2 blockedPosition, const std::vector<Bot *> &otherBots) const;
-
-  // Animation and visual helpers
-  void UpdateAnimations();
-  void GetTextureAndAnimation(Texture2D &texture, Rectangle &source);
-  void UpdateDirection(Vector2 movementVector);
-
-  // E-SWAT Tactical System Methods
-  virtual void ExecuteESWATTactics(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
-  void AssignESWATRole(const std::vector<Bot *> &allBots, Vector2 playerPos);
-  Vector2 GetESWATPosition(Vector2 playerPos, const std::vector<Bot *> &allBots);
-  bool CheckESWATCoordination(const std::vector<Bot *> &allBots);
-  void ExecutePositioning(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
-  void ExecuteCoordinatedAttack(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
-  void ExecuteRetreatRegroup(Vector2 playerPos, float deltaTime, const std::vector<Bot *> &allBots);
-  void CircleStrikePlayer(Vector2 playerPos, float deltaTime);
-
-  // Public properties (you may later wrap these in getters/setters)
+  // Public properties for game logic
   float x, y;
   float width, height;
-  float speed;
-  Direction direction;
   int health, maxHealth;
-  Vector2 GetPosition() const { return {x, y}; };
-  bool IsInPosition() const { return isInPosition; };
-  bool isInPosition;
-  float frameWidth;
-  float frameHeight;
+  float speed;
+  Direction facing;
+  bool isStunned;
+  bool isKnockedOut;
 
 protected:
-  // Texture resources (to be loaded in LoadTextures)
-  Texture2D idleTexture;
-  Texture2D idleLeftTexture;
-  Texture2D walkTexture;
-  Texture2D runTexture;
-  Texture2D attackTexture;
-
-  // Animation structures
-  Animation idleRightAnim;
-  Animation idleLeftAnim;
-  Animation walkAnim;
-  Animation runAnim;
-  Animation attackAnim;
-
-  // Core AI State
+  // Bot identity and type
+  BotType type;
   BotState state;
-  BotState previousState;
   float stateTimer;
 
-  // AI Behavior Config
-  float chaseRange;
-  float attackRange;
-  float fleeingRange;
-  float wanderTime;
-  float wanderTimer;
-  Vector2 wanderTarget;
-
-  // Patrol behavior
-  std::vector<Vector2> patrolWaypoints;
-  int currentWaypointIndex;
-  float waypointReachDistance;
-
-  // Combat status
-  bool isAttacking;
-  float attackTimer;
-  float attackCooldown;
-
-  // Spawn control
-  float spawnDelay;
+  // Spawn system
+  Vector2 spawnPoint;
+  Vector2 targetPosition;
   float spawnTimer;
-  bool isSpawned;
+  bool isOnScreen;
+  bool hasEnteredCombat;
 
-  // Direction/animation logic
-  Vector2 lastValidDirection;
-  float directionChangeTimer;
-  static constexpr float DIRECTION_CHANGE_DELAY = 0.2f;
+  // Direct combat AI parameters
+  float detectionRange; // How far they can see player
+  float attackRange;    // Melee range
+  float shootRange;     // Ranged weapon range
+  float alertTime;
+  float attackCooldown;
+  float attackTimer;
+  float stunTimer;
+  float knockdownTimer;
+  float idleTimer; // For pacing behavior
 
-  // Initialization status
-  bool isLoaded;
+  // Movement and animation
+  float frameWidth, frameHeight;
+  float animTimer;
+  int currentFrame;
+  int maxFrames;
 
-  // Bot identity
-  BotType type;
+  // Textures
+  Texture2D idleTexture;
+  Texture2D walkTexture;
+  Texture2D runTexture;
+  Texture2D punchTexture;
+  Texture2D kickTexture;
+  Texture2D grabTexture;
+  Texture2D shootTexture;
+  Texture2D throwTexture;
+  Texture2D blockTexture;
+  Texture2D hurtTexture;
+  Texture2D knockdownTexture;
+  Texture2D deathTexture;
 
-  // E-SWAT Tactical System Variables
-  TacticalRole tacticalRole;
-  TacticalPhase tacticalPhase;
-  Vector2 tacticalTarget;
-  Vector2 circleCenter;
-  float circleRadius;
-  float circleAngle;
-  float tacticalTimer;
-  bool waitingForSignal;
-  int groupId;
-  static int nextGroupId;
+  // Animation data
+  Animation idleAnim;
+  Animation walkAnim;
+  Animation runAnim;
+  Animation punchAnim;
+  Animation kickAnim;
+  Animation grabAnim;
+  Animation shootAnim;
+  Animation throwAnim;
+  Animation blockAnim;
+  Animation hurtAnim;
+  Animation knockdownAnim;
+  Animation deathAnim;
 
-  // E-SWAT Constants
-  static constexpr float ESWAT_CIRCLE_RADIUS = 200.0f;
-  static constexpr float ESWAT_ATTACK_DISTANCE = 80.0f;
-  static constexpr float ESWAT_POSITIONING_SPEED = 1.3f;
-  static constexpr float ESWAT_ATTACK_SPEED = 1.8f;
-  static constexpr float ESWAT_COORDINATION_TIME = 2.0f;
+  // Combat behavior
+  bool isAggressive;
+  bool playerSpotted;
+  Vector2 lastKnownPlayerPos;
+  float aggroLevel;
+  int comboCount;
+  float comboTimer;
+
+  // Combat stats
+  int punchDamage;
+  int kickDamage;
+  int grabDamage;
+  int shootDamage;
+  int throwDamage;
+  float blockChance;
+  float counterAttackChance;
+
+  // Pacing behavior
+  Vector2 paceStartPos;
+  Vector2 paceEndPos;
+  bool pacingRight;
+  float paceDistance;
+
+  // Combat constants
+  static constexpr float SPAWN_MARGIN = 120.0f;
+  static constexpr float RUN_SPEED = 120.0f;
+  static constexpr float WALK_SPEED = 60.0f;
+  static constexpr float DETECTION_RANGE = 300.0f;
+  static constexpr float ATTACK_RANGE = 45.0f;
+  static constexpr float SHOOT_RANGE = 250.0f;
+  static constexpr float PACE_DISTANCE = 80.0f;
 
 private:
-  void LoadTexturesSafe();
+  // Helper methods
+  void InitializeByType();
+  void UpdateAnimation(float deltaTime);
+  void CheckScreenBounds();
+  Vector2 GetRandomSpawnPoint();
+  bool CanSeePlayer(Vector2 playerPos);
+  void SetStateWithTimer(BotState newState, float duration = 0.0f);
+  float GetDistanceToPlayer(Vector2 playerPos);
+
+  // Direct combat behaviors
+  void ExecuteDirectAttack(Vector2 playerPos, float deltaTime);
+  void ExecuteRangedAttack(Vector2 playerPos, float deltaTime);
+  void ExecuteMovement(Vector2 playerPos, float deltaTime);
+  void ExecutePacing(float deltaTime);
+  void ExecuteStunned(float deltaTime);
+  void ExecuteKnockdown(float deltaTime);
+
+  // Combat logic
+  void ChooseDirectAttack(Vector2 playerPos);
+  void ChooseRangedAttack(Vector2 playerPos);
+  void AttemptBlock();
+  void AttemptCounterAttack(Vector2 playerPos);
+  void SetupPacingArea();
+
+  // Audio and effects
+  void PlaySpawnSound();
+  void PlayPunchSound();
+  void PlayKickSound();
+  void PlayShootSound();
+  void PlayThrowSound();
+  void PlayHurtSound();
+  void PlayKnockdownSound();
+  void CreateHitEffect();
+  void CreateMuzzleFlash();
+};
+
+// Specialized bot types with direct combat focus
+class StreetThugBot : public Bot
+{
+public:
+  StreetThugBot(float spawnX, float spawnY);
+  void UpdateAI(Vector2 playerPos, float deltaTime) override;
+  void LoadTextures() override;
+  // Direct melee rushes, basic attacks
+};
+
+class ShooterBot : public Bot
+{
+public:
+  ShooterBot(float spawnX, float spawnY);
+  void UpdateAI(Vector2 playerPos, float deltaTime) override;
+  void LoadTextures() override;
+  void Shoot(Vector2 targetPos) override;
+  // Stops and shoots, moves to new positions
+};
+
+class BrawlerBot : public Bot
+{
+public:
+  BrawlerBot(float spawnX, float spawnY);
+  void UpdateAI(Vector2 playerPos, float deltaTime) override;
+  void LoadTextures() override;
+  void Grab(Vector2 targetPos) override;
+  // Rushes in for grappling attacks
+};
+
+class HeavyBot : public Bot
+{
+public:
+  HeavyBot(float spawnX, float spawnY);
+  void UpdateAI(Vector2 playerPos, float deltaTime) override;
+  void LoadTextures() override;
+  void Punch(Vector2 targetPos) override;
+  // Slow approach, devastating attacks
+};
+
+class ThrowerBot : public Bot
+{
+public:
+  ThrowerBot(float spawnX, float spawnY);
+  void UpdateAI(Vector2 playerPos, float deltaTime) override;
+  void LoadTextures() override;
+  void ThrowWeapon(Vector2 targetPos) override;
+  // Throws street objects like bottles, rocks, pipes
+};
+
+class RusherBot : public Bot
+{
+public:
+  RusherBot(float spawnX, float spawnY);
+  void UpdateAI(Vector2 playerPos, float deltaTime) override;
+  void LoadTextures() override;
+  void RunTowardPlayer(Vector2 playerPos) override;
+  // Fast direct attacks, hit-and-run
+};
+
+// Bot spawner for managing encounters
+class BotSpawner
+{
+public:
+  BotSpawner();
+  ~BotSpawner();
+
+  void Update(float deltaTime, Vector2 playerPos);
+  void SpawnBot(BotType type);
+  void SpawnSquad(int count, BotType primaryType = BotType::STREET_THUG);
+  void SpawnMixedEncounter();
+  void ClearAllBots();
+
+  std::vector<Bot *> &GetBots() { return activeBots; }
+
+  // Spawn configuration
+  void SetEncounterRate(float rate) { encounterRate = rate; }
+  void SetMaxBots(int max) { maxActiveBots = max; }
+  void SetAggressionLevel(float level) { aggressionLevel = level; }
+  void EnableRandomEncounters(bool enable) { randomEncounters = enable; }
+
+private:
+  std::vector<Bot *> activeBots;
+  float encounterTimer;
+  float encounterRate;
+  int maxActiveBots;
+  float aggressionLevel;
+  bool randomEncounters;
+
+  Vector2 GetSpawnPosition();
+  void CleanupDefeatedBots();
+  BotType GetRandomBotType();
 };
