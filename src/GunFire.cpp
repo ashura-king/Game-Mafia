@@ -1,34 +1,21 @@
-#include "includes/GunFire.hpp"
-#include <raylib.h>
+#include "includes/Gunfire.hpp"
 
 Gunfire::Gunfire(Texture2D tex, Vector2 pos, float spd, int dir)
-    : position(pos),
-      speed(spd),
-      active(true),
-      direct(dir),
-      bulletTexture(tex),
-      frameCount(3),
-      currentFrame(0),
-      frameTime(0.1f),
-      frameTimer(0.0f),
-      frameWidth(static_cast<float>(tex.width) / 3),
-      frameHeight(static_cast<float>(tex.height)),
-      frameRec{0.0f, 0.0f, frameWidth, frameHeight}
+    : position(pos), speed(spd), direction(dir), active(true),
+      bulletTexture(tex), frameCount(3), currentFrame(0),
+      frameTime(0.1f), frameTimer(0.0f)
 {
-
-  // Use float for precise frame width if image width isn't divisible by frameCount
-  float frameWidth = static_cast<float>(tex.width) / frameCount;
-  float frameHeight = static_cast<float>(tex.height);
-
+  frameWidth = static_cast<float>(tex.width) / frameCount;
+  frameHeight = static_cast<float>(tex.height);
   frameRec = {0.0f, 0.0f, frameWidth, frameHeight};
 }
 
-void Gunfire::Update()
+void Gunfire::Update(const Camera2D &camera)
 {
-  // Move the bullet
-  position.x += speed * direct;
+  // Move
+  position.x += speed * direction;
 
-  // Animate the bullet
+  // Animate
   frameTimer += GetFrameTime();
   if (frameTimer >= frameTime)
   {
@@ -37,9 +24,18 @@ void Gunfire::Update()
     frameRec.x = currentFrame * frameWidth;
   }
 
-  // Deactivate if offscreen
-  if (position.x < -frameWidth || position.x > GetScreenWidth() + frameWidth)
+  // Camera bounds check for world scrolling
+  Vector2 camMin = {
+      camera.target.x - camera.offset.x / camera.zoom,
+      camera.target.y - camera.offset.y / camera.zoom};
+  Vector2 camMax = {
+      camera.target.x + camera.offset.x / camera.zoom,
+      camera.target.y + camera.offset.y / camera.zoom};
+
+  if (position.x < camMin.x - frameWidth || position.x > camMax.x + frameWidth)
+  {
     active = false;
+  }
 }
 
 void Gunfire::Draw()
@@ -47,14 +43,12 @@ void Gunfire::Draw()
   if (!active)
     return;
 
-  Rectangle drawFrame = frameRec;
-
-  if (direct == -1)
+  Rectangle drawRec = frameRec;
+  if (direction == -1)
   {
-    // Flip horizontally
-    drawFrame.width = -frameRec.width;
-    drawFrame.x += frameRec.width; // Adjust origin so it doesn't flip offset
+    drawRec.width = -frameRec.width;
+    drawRec.x += frameRec.width;
   }
 
-  DrawTextureRec(bulletTexture, drawFrame, position, RAYWHITE);
+  DrawTextureRec(bulletTexture, drawRec, position, WHITE);
 }

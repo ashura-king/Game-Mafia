@@ -84,7 +84,7 @@ public:
   ~Character();
 
   // Update methods
-  void Update();
+  void Update(const Camera2D &camera);
   void HandleInput();
   void UpdatePosition(float deltaX);
   void UpdateAnimations();

@@ -1,5 +1,5 @@
 #pragma once
-#include "Bot.hpp"
+#include "includes/Bot.hpp"
 #include "raylib.h"
 
 class Heavy : public Bot

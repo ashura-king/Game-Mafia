@@ -1,7 +1,7 @@
 #ifndef BRAWLER_H
 #define BRAWLER_H
 
-#include "Bot.hpp"
+#include "includes/Bot.hpp"
 #include "raylib.h"
 
 class Brawler : public Bot

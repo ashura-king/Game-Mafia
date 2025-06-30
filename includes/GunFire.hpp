@@ -1,14 +1,13 @@
-#ifndef GUNFIRE_HPP
-#define GUNFIRE_HPP
+#ifndef GUNFIRE_H
+#define GUNFIRE_H
 
-#include <raylib.h>
+#include "raylib.h"
 
 class Gunfire
 {
 public:
   Gunfire(Texture2D tex, Vector2 pos, float spd, int dir);
-
-  void Update();
+  void Update(const Camera2D &camera);
   void Draw();
 
   bool IsActive() const { return active; }
@@ -16,16 +15,18 @@ public:
 private:
   Vector2 position;
   float speed;
+  int direction;
+
   bool active;
-  int direct;
 
   Texture2D bulletTexture;
 
-  // Manual animation fields
+  // Animation
   int frameCount;
   int currentFrame;
   float frameTime;
   float frameTimer;
+
   float frameWidth;
   float frameHeight;
   Rectangle frameRec;

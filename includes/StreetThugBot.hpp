@@ -1,6 +1,6 @@
 #ifndef STREETTHUGBOT_H
 #define STREETTHUGBOT_H
-#include "Bot.hpp"
+#include "includes/Bot.hpp"
 #include "raylib.h"
 
 class StreetThugBot : public Bot

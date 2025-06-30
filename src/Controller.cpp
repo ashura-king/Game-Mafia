@@ -1,5 +1,5 @@
 #include "includes/Controller.hpp"
-
+#include <algorithm>
 #include <raylib.h>
 
 Controller::Controller()
@@ -158,7 +158,7 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   playingMusicStarted = false;
   running = true;
   showExitPop = false;
-
+  spawner = new BotSpawner();
   popup = Popup();
   // spawner = new BotSpawner();
 
@@ -166,6 +166,12 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   {
     PlayMusicStream(backgroundMusic);
   }
+
+  // Camera
+  camera.offset = {screenWidth / 2.0f, screenHeight / 2.0f};
+  camera.target = {player->GetX(), player->GetY()};
+  camera.rotation = 0.0f;
+  camera.zoom = 1.0f;
 }
 
 void Controller::Update()
@@ -308,8 +314,17 @@ void Controller::UpdatePlaying()
   if (player)
   {
     player->HandleInput();
-    player->Update();
+    player->Update(camera);
   }
+
+   float minX = screenWidth / 2.0f;
+  float maxX = levelWidth - screenWidth / 2.0f;
+  float camX = Clamp(player->GetX(), minX, maxX);
+
+  // Lock vertical camera (like Metal Slug)
+  float camY = screenHeight / 2.0f;
+
+  camera.target = {camX, camY};
 
   Vector2 playerPos = player ? Vector2{player->GetX(), player->GetY()} : Vector2{0, 0};
   float deltaTime = GetFrameTime();
@@ -319,10 +334,13 @@ void Controller::UpdatePlaying()
     spawner->Update(deltaTime, playerPos);
   }
 
+  float newCamX = Clamp(player->GetX(), minX, maxX);
+  float scrollDelta = newCamX - camera.target.x;
+  camera.target.x = newCamX;
   // Update background layers
   for (Gamelayer *main : mainlayers)
     if (main)
-      main->UpdateLayer(backgroundSpeed);
+      main->UpdateLayer(scrollDelta);
 
   // Update music
   if (!playingMusicStarted && !IsMusicStreamPlaying(playingMusic))
@@ -376,6 +394,8 @@ void Controller::DrawGame()
 
 void Controller::DrawPlaying()
 {
+
+  BeginMode2D(camera);
   // Draw background layers
   for (Gamelayer *main : mainlayers)
     if (main)
@@ -383,7 +403,7 @@ void Controller::DrawPlaying()
 
   if (player)
     player->Draw();
-
+  EndMode2D();
   // Draw UI elements
   if (settingIcon)
     settingIcon->Draw();
@@ -405,11 +425,11 @@ void Controller::Unload()
     delete layer;
   gameLayers.clear();
 
-  /*if (spawner)
+  if (spawner)
   {
     delete spawner;
     spawner = nullptr;
-  }*/
+  }
 
   for (Gamelayer *main : mainlayers)
     delete main;

@@ -10,11 +10,11 @@
 #include "includes/Button.hpp"
 #include "includes/Popup.hpp"
 #include "includes/GameType.hpp"
-#include "includes/Bots/Bot.hpp"
+#include "includes/Bot.hpp"
 #include "includes/TextOutlined.hpp"
 #include "includes/SettingMenu.hpp"
 #include "includes/SettingPop.hpp"
-#include "Bots/BotSpawner.hpp"
+#include "includes/BotSpawner.hpp"
 
 class Controller
 {
@@ -27,7 +27,8 @@ public:
   void Draw();
   void Unload();
 
-  void SpawnBots(int count);
+  Camera2D camera;
+  float levelWidth = 4000.0f;
 
 private:
   // Screen properties

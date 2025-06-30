@@ -1,7 +1,8 @@
 #include "includes/GameLayer.hpp"
+#include <cmath>
 
-Gamelayer::Gamelayer(const char *file, float y, float scal)
-    : yOffset(y), scale(scal), scrollX(0.0f)
+Gamelayer::Gamelayer(const char *file, float y, float scal, float parallaxFactor)
+    : yOffset(y), scale(scal), scrollX(0.0f), parallaxSpeed(parallaxFactor)
 {
   texture = LoadTexture(file);
 }
@@ -11,32 +12,35 @@ Gamelayer::~Gamelayer()
   UnloadTexture(texture);
 }
 
-void Gamelayer::UpdateLayer(float playerSpeed)
+void Gamelayer::UpdateLayer(float cameraDelta)
 {
-  // Parallax effect
-  scrollX -= playerSpeed * 0.5f; // Parallax factor
+  scrollX -= cameraDelta * parallaxSpeed;
 
-  // Wrap for seamless repeat
   float width = texture.width * scale;
-  if (scrollX <= -width)
-    scrollX += width;
-  if (scrollX >= width)
+  scrollX = fmod(scrollX, width);
+  if (scrollX > 0)
     scrollX -= width;
 }
 
 void Gamelayer::Drawlayer()
 {
   float width = texture.width * scale;
+  int screenWidth = GetScreenWidth();
 
-  // Draw repeated textures across screen width
-  for (float x = scrollX; x < GetScreenWidth(); x += width)
+  // Normalize scrollX into range [-width, 0]
+  float normalizedScroll = fmod(scrollX, width);
+  if (normalizedScroll > 0)
+    normalizedScroll -= width;
+
+  // Start drawing slightly left of the screen
+  float startX = normalizedScroll;
+
+  // Draw two or more copies to fully cover the screen
+  for (float x = startX; x < screenWidth; x += width)
   {
-    DrawTextureEx(texture, {x, yOffset}, 0.0f, scale, WHITE);
+    DrawTextureEx(texture, {x, yOffset}, 0.0f, scale, GRAY);
   }
 
-  // Draw one more before scrollX to prevent visual gap
-  if (scrollX > 0)
-  {
-    DrawTextureEx(texture, {scrollX - width, yOffset}, 0.0f, scale, WHITE);
-  }
+  // Final copy to cover small gaps at the far right
+  DrawTextureEx(texture, {startX + width * (float)ceil((screenWidth - startX) / width), yOffset}, 0.0f, scale, GRAY);
 }

@@ -1,4 +1,4 @@
-#include "includes/Bots/Heavy.hpp"
+#include "includes/Heavy.hpp"
 #include <cmath>
 
 Heavy::Heavy(float spawnX, float spawnY) : Bot(spawnX, spawnY, BotType::HEAVY)

@@ -1,7 +1,7 @@
 // BotSpawner.hpp
 #pragma once
 
-#include "Bot.hpp"
+#include "includes/Bot.hpp"
 #include "StreetThugBot.hpp"
 #include "Brawler.hpp"
 #include "Heavy.hpp"

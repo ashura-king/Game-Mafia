@@ -222,20 +222,13 @@ Character::~Character()
   }
 }
 
-void Character::Update()
+void Character::Update(const Camera2D &camera)
 {
   fireTimer -= GetFrameTime();
   fireTimer = std::max(fireTimer, 0.0f);
-
-    float screenWidth = GetScreenWidth();
-  if (x < 0)
-    x = 0;
-  if (x + width > screenWidth)
-    x = screenWidth - width;
-
   for (auto &bullet : bullets)
   {
-    bullet.Update();
+    bullet.Update(camera);
   }
 
   UpdateAnimations();

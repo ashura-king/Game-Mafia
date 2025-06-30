@@ -1,5 +1,5 @@
 // BotSpawner.cpp
-#include "includes/Bots/BotSpawner.hpp"
+#include "includes/BotSpawner.hpp"
 #include <raylib.h>
 #include <algorithm>
 

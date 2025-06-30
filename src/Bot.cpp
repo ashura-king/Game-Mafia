@@ -1,26 +1,66 @@
-#include "includes/Bots/Bot.hpp"
-#include "raylib.h"
+#include "includes/Bot.hpp"
+#include <raylib.h>
 #include <cmath>
 
 Bot::Bot(float spawnX, float spawnY, BotType botType)
-    : x(spawnX), y(spawnY), type(botType), facing(Direction::RIGHT), health(100), maxHealth(100),
-      isStunned(false), isKnockedOut(false), state(BotState::SPAWNING), stateTimer(0.0f),
-      attackCooldown(0.0f), attackTimer(0.0f), stunTimer(0.0f), knockdownTimer(0.0f),
-      idleTimer(0.0f), spawnTimer(2.0f), animTimer(0.0f), currentFrame(0), maxFrames(1),
-      isAggressive(false), playerSpotted(false), aggroLevel(0.0f), comboCount(0), comboTimer(0.0f),
-      isOnScreen(false), hasEnteredCombat(false), pacingRight(true), paceDistance(PACE_DISTANCE)
+    : x(spawnX), y(spawnY),
+      width(0), height(0),
+      health(100), maxHealth(100),
+      facing(Direction::RIGHT),
+      isStunned(false), isKnockedOut(false),
+
+      type(botType),
+      state(BotState::SPAWNING),
+      stateTimer(0.0f),
+
+      speed(WALK_SPEED),
+      detectionRange(DETECTION_RANGE),
+      attackRange(ATTACK_RANGE),
+      shootRange(SHOOT_RANGE),
+      alertTime(0.0f),
+      attackCooldown(0.0f),
+      attackTimer(0.0f),
+      stunTimer(0.0f),
+      knockdownTimer(0.0f),
+      idleTimer(0.0f),
+      spawnTimer(2.0f),
+
+      isAggressive(false),
+      playerSpotted(false),
+      lastKnownPlayerPos({0.0f, 0.0f}),
+      aggroLevel(0.0f),
+      comboCount(0),
+      comboTimer(0.0f),
+
+      frameWidth(64), frameHeight(64),
+      animTimer(0.0f),
+      currentFrame(0),
+      maxFrames(1),
+      spawnPoint({spawnX, spawnY}),
+      targetPosition({spawnX, spawnY}),
+      isOnScreen(false),
+      hasEnteredCombat(false),
+
+      paceStartPos({0.0f, 0.0f}),
+      paceEndPos({0.0f, 0.0f}),
+      pacingRight(true),
+      paceDistance(PACE_DISTANCE),
+
+      punchDamage(0), kickDamage(0), grabDamage(0),
+      shootDamage(0), throwDamage(0),
+      blockChance(0.0f), counterAttackChance(0.0f),
+
+      idleTexture({0}), walkTexture({0}), runTexture({0}),
+      punchTexture({0}), kickTexture({0}), grabTexture({0}),
+      smashTexture({0}), shootTexture({0}), throwTexture({0}),
+      blockTexture({0}), hurtTexture({0}),
+      knockdownTexture({0}), deathTexture({0}),
+
+      idleAnim(), walkAnim(), runAnim(),
+      punchAnim(), kickAnim(), grabAnim(), smashAnim(),
+      shootAnim(), throwAnim(), blockAnim(),
+      hurtAnim(), knockdownAnim(), deathAnim()
 {
-  speed = WALK_SPEED;
-  detectionRange = DETECTION_RANGE;
-  attackRange = ATTACK_RANGE;
-  shootRange = SHOOT_RANGE;
-
-  frameWidth = 64; // default size, update with texture size later
-  frameHeight = 64;
-
-  spawnPoint = {spawnX, spawnY};
-  targetPosition = {spawnX, spawnY};
-
   InitializeByType();
   SetupPacingArea();
 }

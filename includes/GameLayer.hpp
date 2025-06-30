@@ -1,6 +1,4 @@
-#ifndef GAMELAYER_HPP
-#define GAMELAYER_HPP
-
+#pragma once
 #include <raylib.h>
 
 class Gamelayer
@@ -10,13 +8,11 @@ private:
   float yOffset;
   float scale;
   float scrollX;
+  float parallaxSpeed;
 
 public:
-  Gamelayer(const char *file, float y, float scal);
+  Gamelayer(const char *file, float y, float scal, float parallaxFactor = 1.0f);
   ~Gamelayer();
-
-  void UpdateLayer(float playerSpeed = 1.0f);
+  void UpdateLayer(float playerSpeed);
   void Drawlayer();
 };
-
-#endif
