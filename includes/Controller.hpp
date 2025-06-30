@@ -28,7 +28,8 @@ public:
   void Unload();
 
   Camera2D camera;
-  float levelWidth = 4000.0f;
+  float levelWidth = 0.0f;
+  void AddGamelayer(const std::string &file);
 
 private:
   // Screen properties

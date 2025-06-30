@@ -98,20 +98,13 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
     gameLayers.push_back(new Layer("resource/texture/crosswalk.png", 1.0f, 70, scale));
 
   // Main Game Layers with validation
-  if (FileExists("resource/texture/mainsky.png"))
-    mainlayers.push_back(new Gamelayer("resource/texture/mainsky.png", 0.0f, scale));
-  if (FileExists("resource/texture/housemain2.png"))
-    mainlayers.push_back(new Gamelayer("resource/texture/housemain2.png", 0.0f, scale));
-  if (FileExists("resource/texture/housemain.png"))
-    mainlayers.push_back(new Gamelayer("resource/texture/housemain.png", 0.0f, scale));
-  if (FileExists("resource/texture/housemain1.png"))
-    mainlayers.push_back(new Gamelayer("resource/texture/housemain1.png", 0.0f, scale));
-  if (FileExists("resource/texture/fountain&bush.png"))
-    mainlayers.push_back(new Gamelayer("resource/texture/fountain&bush.png", 0.0f, scale));
-  if (FileExists("resource/texture/policebox.png"))
-    mainlayers.push_back(new Gamelayer("resource/texture/policebox.png", 0.0f, scale));
-  if (FileExists("resource/texture/mainroad.png"))
-    mainlayers.push_back(new Gamelayer("resource/texture/mainroad.png", 0.0f, scale));
+  AddGamelayer("resource/texture/1.png");
+  AddGamelayer("resource/texture/6.png");
+  AddGamelayer("resource/texture/5.png");
+  AddGamelayer("resource/texture/4.png");
+  AddGamelayer("resource/texture/3.png");
+  AddGamelayer("resource/texture/2.png");
+  AddGamelayer("resource/texture/7.png");
 
   // Buttons with validation
   if (FileExists("resource/texture/button1.png"))
@@ -172,6 +165,18 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   camera.target = {player->GetX(), player->GetY()};
   camera.rotation = 0.0f;
   camera.zoom = 1.0f;
+}
+void Controller::AddGamelayer(const std::string &file)
+{
+  if (FileExists(file.c_str()))
+  {
+    Gamelayer *layer = new Gamelayer(file.c_str(), 0.0f, scale);
+    mainlayers.push_back(layer);
+
+    float width = layer->GetTextureWidth() * scale;
+    if (width > levelWidth)
+      levelWidth = width; // Keep the widest as level width
+  }
 }
 
 void Controller::Update()
@@ -316,19 +321,22 @@ void Controller::UpdatePlaying()
     player->HandleInput();
     player->Update(camera);
   }
+  float px = player->GetX();
+  float clampedX = Clamp(px, 0.0f, levelWidth - player->GetWidth());
+  if (px != clampedX)
+    player->SetPosition(clampedX, player->GetY());
 
-   float minX = screenWidth / 2.0f;
+  float minX = screenWidth / 2.0f;
   float maxX = levelWidth - screenWidth / 2.0f;
   float camX = Clamp(player->GetX(), minX, maxX);
 
-  // Lock vertical camera (like Metal Slug)
   float camY = screenHeight / 2.0f;
 
   camera.target = {camX, camY};
 
   Vector2 playerPos = player ? Vector2{player->GetX(), player->GetY()} : Vector2{0, 0};
   float deltaTime = GetFrameTime();
-  float backgroundSpeed = player ? player->GetCurrentMovementSpeed() : 0.0f;
+
   // if (spawner)
   {
     spawner->Update(deltaTime, playerPos);
@@ -396,7 +404,6 @@ void Controller::DrawPlaying()
 {
 
   BeginMode2D(camera);
-  // Draw background layers
   for (Gamelayer *main : mainlayers)
     if (main)
       main->Drawlayer();
@@ -404,7 +411,7 @@ void Controller::DrawPlaying()
   if (player)
     player->Draw();
   EndMode2D();
-  // Draw UI elements
+
   if (settingIcon)
     settingIcon->Draw();
 
