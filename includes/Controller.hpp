@@ -10,10 +10,11 @@
 #include "includes/Button.hpp"
 #include "includes/Popup.hpp"
 #include "includes/GameType.hpp"
-#include "includes/Bot.hpp"
+#include "includes/Bots/Bot.hpp"
 #include "includes/TextOutlined.hpp"
 #include "includes/SettingMenu.hpp"
 #include "includes/SettingPop.hpp"
+#include "Bots/BotSpawner.hpp"
 
 class Controller
 {
@@ -51,7 +52,6 @@ private:
 
   // Game objects
   Character *player;
-  std::vector<Bot *> bots;
 
   // Background Layers
   std::vector<Layer *> menuLayers;
@@ -94,8 +94,5 @@ private:
   void DrawPlaying();
 
   // Bot utility
-  float playSessionTime = 0.0f;
-
-  const char *GetBotStateText(BotState state);
-  Bot *CreateBot(BotType type, Vector2 pos);
+  BotSpawner *spawner;
 };

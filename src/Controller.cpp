@@ -160,41 +160,11 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   showExitPop = false;
 
   popup = Popup();
+  // spawner = new BotSpawner();
 
   if (!IsMusicStreamPlaying(backgroundMusic))
   {
     PlayMusicStream(backgroundMusic);
-  }
-}
-
-void Controller::SpawnBots(int count)
-{
-  for (int i = 0; i < count; i++)
-  {
-    Vector2 pos = {150 + i * 100, 500};
-    BotType type = GetNextBotType();
-    Bot *bot = CreateBot(type, pos);
-    bot->LoadTextures();
-    bots.push_back(bot);
-  }
-}
-
-Bot *Controller::CreateBot(BotType type, Vector2 pos)
-{
-  switch (type)
-  {
-  case BotType::SHOOTER:
-    return new ShooterBot(pos.x, pos.y);
-  case BotType::BRAWLER:
-    return new BrawlerBot(pos.x, pos.y);
-  case BotType::HEAVY:
-    return new HeavyBot(pos.x, pos.y);
-  case BotType::THROWER:
-    return new ThrowerBot(pos.x, pos.y);
-  case BotType::RUSHER:
-    return new RusherBot(pos.x, pos.y);
-  default:
-    return nullptr;
   }
 }
 
@@ -309,7 +279,7 @@ void Controller::UpdateGame()
     if (gameTimer >= fadeDuration)
     {
       fadeOutComplete = true;
-      SpawnBots(4);
+
       currentState = Gamestate::PLAYING;
     }
   }
@@ -318,7 +288,6 @@ void Controller::UpdateGame()
 void Controller::UpdatePlaying()
 {
 
-  playSessionTime += GetFrameTime;
   if (settingIcon)
   {
     settingIcon->Update();
@@ -330,14 +299,7 @@ void Controller::UpdatePlaying()
       return;
     }
   }
-  for (Bot *bot : bot)
-  {
-    if (bot && bot->IsAlive())
-    {
-      bot->Update(deltaTime);
-      bot->UpdateAI(playerPos, deltaTime);
-    }
-  }
+
   if (showSettingsPopup)
   {
     return;
@@ -352,6 +314,10 @@ void Controller::UpdatePlaying()
   Vector2 playerPos = player ? Vector2{player->GetX(), player->GetY()} : Vector2{0, 0};
   float deltaTime = GetFrameTime();
   float backgroundSpeed = player ? player->GetCurrentMovementSpeed() : 0.0f;
+  // if (spawner)
+  {
+    spawner->Update(deltaTime, playerPos);
+  }
 
   // Update background layers
   for (Gamelayer *main : mainlayers)
@@ -370,15 +336,6 @@ void Controller::UpdatePlaying()
   if (IsMusicStreamPlaying(playingMusic))
   {
     UpdateMusicStream(playingMusic);
-  }
-
-  static float spawnTimer = 0.0f;
-  spawnTimer += GetFrameTime();
-
-  if (spawnTimer >= 20.0f && bots.size() < 6)
-  {
-    SpawnBots(1); // add 1 bot
-    spawnTimer = 0.0f;
   }
 }
 
@@ -427,14 +384,6 @@ void Controller::DrawPlaying()
   if (player)
     player->Draw();
 
-  for (Bot *bot : bots)
-  {
-    if (bot && bot->IsAlive())
-    {
-      bot->Draw()
-    }
-  }
-
   // Draw UI elements
   if (settingIcon)
     settingIcon->Draw();
@@ -456,12 +405,15 @@ void Controller::Unload()
     delete layer;
   gameLayers.clear();
 
+  /*if (spawner)
+  {
+    delete spawner;
+    spawner = nullptr;
+  }*/
+
   for (Gamelayer *main : mainlayers)
     delete main;
   mainlayers.clear();
-  for (Bot *bot : bots)
-    delete bot;
-  bots.clear();
 
   delete player;
   player = nullptr;
