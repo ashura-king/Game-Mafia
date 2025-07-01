@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include "includes/Character.hpp"
-#include "includes/Layer.hpp"
 #include "includes/GameLayer.hpp"
 #include "includes/Button.hpp"
 #include "includes/Popup.hpp"
@@ -15,6 +14,7 @@
 #include "includes/SettingMenu.hpp"
 #include "includes/SettingPop.hpp"
 #include "includes/BotSpawner.hpp"
+#include "includes/SpriteLoader.hpp"
 
 class Controller
 {

@@ -69,42 +69,9 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
     player->SetGunshotVolume(0.7f);
   }
 
-  // Menu Layers with validation
-  if (FileExists("resource/texture/Sky_pale.png"))
-    menuLayers.push_back(new Layer("resource/texture/Sky_pale.png", 0.1f, 0, scale));
-  if (FileExists("resource/texture/back.png"))
-    menuLayers.push_back(new Layer("resource/texture/back.png", 0.5f, 0, scale));
-  if (FileExists("resource/texture/Houses3_pale.png"))
-    menuLayers.push_back(new Layer("resource/texture/Houses3_pale.png", 1.0f, 70, scale));
-  if (FileExists("resource/texture/houses1.png"))
-    menuLayers.push_back(new Layer("resource/texture/houses1.png", 1.0f, 70, scale));
-  if (FileExists("resource/texture/minishop&callbox.png"))
-    menuLayers.push_back(new Layer("resource/texture/minishop&callbox.png", 1.0f, 80, scale));
-  if (FileExists("resource/texture/road&lamps.png"))
-    menuLayers.push_back(new Layer("resource/texture/road&lamps.png", 1.0f, 75, scale));
-
-  // Game Layers with validation
-  if (FileExists("resource/texture/sky.png"))
-    gameLayers.push_back(new Layer("resource/texture/sky.png", 0.1f, 0, scale));
-  if (FileExists("resource/texture/houses3.png"))
-    gameLayers.push_back(new Layer("resource/texture/houses3.png", 0.5f, 0, scale));
-  if (FileExists("resource/texture/night2.png"))
-    gameLayers.push_back(new Layer("resource/texture/night2.png", 1.0f, 70, scale));
-  if (FileExists("resource/texture/night.png"))
-    gameLayers.push_back(new Layer("resource/texture/night.png", 1.0f, 75, scale));
-  if (FileExists("resource/texture/road.png"))
-    gameLayers.push_back(new Layer("resource/texture/road.png", 1.0f, 75, scale));
-  if (FileExists("resource/texture/crosswalk.png"))
-    gameLayers.push_back(new Layer("resource/texture/crosswalk.png", 1.0f, 70, scale));
-
-  // Main Game Layers with validation
-  AddGamelayer("resource/texture/1.png");
-  AddGamelayer("resource/texture/6.png");
-  AddGamelayer("resource/texture/5.png");
-  AddGamelayer("resource/texture/4.png");
-  AddGamelayer("resource/texture/3.png");
-  AddGamelayer("resource/texture/2.png");
-  AddGamelayer("resource/texture/7.png");
+  SpriteLoader::LoadMenuLayer(menuLayers, scale);
+  SpriteLoader::LoadIntroLayer(gameLayers, scale);
+  SpriteLoader::LoadMainGameLayer(this);
 
   // Buttons with validation
   if (FileExists("resource/texture/button1.png"))
@@ -175,7 +142,7 @@ void Controller::AddGamelayer(const std::string &file)
 
     float width = layer->GetTextureWidth() * scale;
     if (width > levelWidth)
-      levelWidth = width; // Keep the widest as level width
+      levelWidth = width;
   }
 }
 
