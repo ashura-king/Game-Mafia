@@ -15,6 +15,7 @@
 #include "includes/SettingPop.hpp"
 #include "includes/BotSpawner.hpp"
 #include "includes/SpriteLoader.hpp"
+#include "includes/ButtonSprite.hpp"
 
 class Controller
 {

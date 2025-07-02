@@ -72,40 +72,7 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   SpriteLoader::LoadMenuLayer(menuLayers, scale);
   SpriteLoader::LoadIntroLayer(gameLayers, scale);
   SpriteLoader::LoadMainGameLayer(this);
-
-  // Buttons with validation
-  if (FileExists("resource/texture/button1.png"))
-  {
-    startButton = new Button("resource/texture/button1.png", "resource/texture/button2.png", "resource/texture/button3.png", scale * 5.0f, true, 70.0f);
-  }
-  if (FileExists("resource/texture/exit1.png"))
-  {
-    exitButton = new Button("resource/texture/exit1.png", "resource/texture/exit2.png", "resource/texture/exit3.png", scale * 5.0f, true, 160.0f);
-  }
-  if (FileExists("resource/texture/yes.png"))
-  {
-    yesButton = new Button("resource/texture/yes.png", "resource/texture/yes2.png", "resource/texture/yes3.png", 2.5f);
-  }
-  if (FileExists("resource/texture/no.png"))
-  {
-    noButton = new Button("resource/texture/no.png", "resource/texture/no2.png", "resource/texture/no3.png", 2.5f);
-  }
-
-  if (FileExists("resource/texture/gear.png"))
-  {
-    settingIcon = new SettingMenu("resource/texture/gear.png", "resource/texture/gearHover.png", "resource/texture/gearClick.png", 1.0f, true, true);
-  }
-  if (FileExists("resource/texture/resume1.png"))
-  {
-    resumeButton = new Button("resource/texture/resume1.png",
-                              "resource/texture/resume2.png",
-                              "resource/texture/resume3.png",
-                              2.5f, true, 0.0f);
-  }
-  if (FileExists("resource/texture/menu1.png"))
-  {
-    backToMenuButton = new Button("resource/texture/menu1.png", "resource/texture/menu2.png", "resource/texture/menu3.png", 2.5f, true, 0.0f);
-  }
+  ButtonSprite::LoadSprites(startButton, exitButton, yesButton, noButton, resumeButton, backToMenuButton, settingIcon, scale);
 
   // Init state helpers
   frameCounter = 0;
