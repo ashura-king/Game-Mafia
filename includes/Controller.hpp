@@ -4,18 +4,18 @@
 #include <string>
 #include <algorithm>
 
-#include "includes/Character.hpp"
-#include "includes/GameLayer.hpp"
-#include "includes/Button.hpp"
-#include "includes/Popup.hpp"
-#include "includes/GameType.hpp"
-#include "includes/Bot.hpp"
-#include "includes/TextOutlined.hpp"
-#include "includes/SettingMenu.hpp"
-#include "includes/SettingPop.hpp"
-#include "includes/BotSpawner.hpp"
-#include "includes/SpriteLoader.hpp"
-#include "includes/ButtonSprite.hpp"
+#include "Bots/Character.hpp"
+#include "Layer/GameLayer.hpp"
+#include "Buttons/Button.hpp"
+#include "Buttons/Popup.hpp"
+#include "GameType.hpp"
+#include "Bots/Bot.hpp"
+#include "Layer/TextOutlined.hpp"
+#include "Buttons/SettingMenu.hpp"
+#include "Buttons/SettingPop.hpp"
+#include "Bots/BotSpawner.hpp"
+#include "Layer/SpriteLoader.hpp"
+#include "Layer/ButtonSprite.hpp"
 
 class Controller
 {
@@ -31,6 +31,7 @@ public:
   Camera2D camera;
   float levelWidth = 0.0f;
   void AddGamelayer(const std::string &file);
+  bool IsRunning() const { return running; }
 
 private:
   // Screen properties

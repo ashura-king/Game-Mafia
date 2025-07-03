@@ -28,6 +28,7 @@ PROJECT_NAME       ?= game
 RAYLIB_VERSION     ?= 5.0.0
 RAYLIB_PATH        ?= ..\..
 
+
 # Define compiler path on Windows
 COMPILER_PATH      ?= C:/raylib/w64devkit/bin
 
@@ -251,6 +252,11 @@ endif
 # Define include paths for required headers
 # NOTE: Several external required libraries (stb and others)
 INCLUDE_PATHS = -I. -I$(RAYLIB_PATH)/src -I$(RAYLIB_PATH)/src/external
+INCLUDE_PATHS += $(patsubst %,-I%,$(shell find includes -type d))
+INCLUDE_PATHS += -Iincludes
+
+
+
 ifneq ($(wildcard /opt/homebrew/include/.*),)
     INCLUDE_PATHS += -I/opt/homebrew/include
 endif
@@ -368,9 +374,10 @@ SRC_DIR = src
 OBJ_DIR = obj
 
 # Define all object files from source files
-SRC = $(call rwildcard, *.c, *.h)
-#OBJS = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-OBJS ?= main.c
+SRC := $(shell find src -name '*.cpp')
+OBJS := $(patsubst src/%.cpp,obj/%.o,$(SRC))
+
+
 
 # For Android platform we call a custom Makefile.Android
 ifeq ($(PLATFORM),PLATFORM_ANDROID)
@@ -387,13 +394,17 @@ all:
 	$(MAKE) $(MAKEFILE_PARAMS)
 
 # Project target defined by PROJECT_NAME
-$(PROJECT_NAME): $(OBJS)
-	$(CC) -o $(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+$(PROJECT_NAME): $(OBJS) 
+	$(CC) -o $(PROJECT_NAME)$(EXT) $(OBJS)  $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 # Compile source files
 # NOTE: This pattern will compile every module defined on $(OBJS)
 #%.o: %.c
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+%.o: %.cpp
+	@if not exist $(dir $@) mkdir $(dir $@)
+	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM)
+
+%.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM)
 
 # Clean everything
@@ -419,3 +430,9 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
 endif
 	@echo Cleaning done
 
+print-debug:
+	@echo Found source files:
+	@echo $(SRC)
+	@echo
+	@echo Will compile into:
+	@echo $(OBJS)

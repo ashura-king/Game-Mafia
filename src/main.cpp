@@ -1,4 +1,4 @@
-#include "includes/Controller.hpp"
+#include "Controller.hpp"
 #include <raylib.h>
 #include <iostream>
 
@@ -14,7 +14,7 @@ int main()
 
     game.Init(screenWidth, screenHeight, originalWidth, originalHeight);
 
-    while (!WindowShouldClose())
+    while (!WindowShouldClose() && game.IsRunning())
     {
         game.Update();
         game.Draw();

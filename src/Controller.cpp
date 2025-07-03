@@ -1,4 +1,4 @@
-#include "includes/Controller.hpp"
+#include "Controller.hpp"
 #include <algorithm>
 #include <raylib.h>
 
@@ -87,7 +87,6 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   showExitPop = false;
   spawner = new BotSpawner();
   popup = Popup();
-  // spawner = new BotSpawner();
 
   if (!IsMusicStreamPlaying(backgroundMusic))
   {
