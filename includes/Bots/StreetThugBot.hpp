@@ -13,19 +13,17 @@ public:
   void LoadTextures() override;
 
 private:
-  // === Street Fighting Mechanics ===
-
-  // === Pack Behavior ===
+  // Pack Behavior
   bool callsForBackup;
   float backupCallCooldown;
   float backupCallTimer;
 
-  // === Aggressive Traits ===
+  //  Aggressive Traits
   float aggressionBoost;
   bool alwaysAdvances;
   float retreatThreshold;
 
-  // === Quick Combat ===
+  // Quick Combat
   float comboChance;
   bool canDoCombo;
   int maxComboHits;

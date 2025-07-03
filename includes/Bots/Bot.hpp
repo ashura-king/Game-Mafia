@@ -2,7 +2,7 @@
 
 #include "raylib.h"
 #include "raymath.h"
-#include "includes/GameType.hpp"
+#include "Layer/GameType.hpp"
 #include <vector>
 
 class Bot
@@ -16,7 +16,7 @@ public:
   virtual void Update(float deltaTime);
   virtual void Draw();
 
-  // Direct combat AI behaviors
+  //  combat AI behaviors
   virtual void UpdateAI(Vector2 playerPos, float deltaTime);
   virtual void SpawnBehavior(float deltaTime);
   virtual void DirectCombatBehavior(Vector2 playerPos, float deltaTime);

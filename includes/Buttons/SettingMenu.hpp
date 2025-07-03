@@ -26,4 +26,4 @@ public:
   bool WasClicked() const;
 };
 
-#endif // SETTING_HPP
+#endif

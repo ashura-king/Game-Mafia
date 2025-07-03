@@ -16,8 +16,7 @@ private:
   bool hasClickTexture;
 
 public:
-  // Constructor for centered button with all effects (your current use case)
-  Button(const char *normalFile, const char *hoverFile, const char *clickFile,
+    Button(const char *normalFile, const char *hoverFile, const char *clickFile,
          float scale, bool centered = true, float yOffset = 0.0f);
 
   ~Button();

@@ -19,7 +19,7 @@ Button::Button(const char *normalFile, const char *hoverFile, const char *clickF
   }
   else
   {
-    position = {0, 0}; // fallback if not centered
+    position = {0, 0};
   }
 }
 

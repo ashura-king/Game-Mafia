@@ -17,7 +17,6 @@ SettingMenu::SettingMenu(const char *firstFile, const char *hoverFile, const cha
 
   float w = firstTexture.width * scale;
 
-  // Top-right position with 10px padding
   settingPosition.x = (float)(GetScreenWidth() - w - 10);
   settingPosition.y = 10.0f;
 }

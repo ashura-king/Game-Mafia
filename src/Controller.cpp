@@ -14,20 +14,17 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
 {
   InitAudioDevice();
 
-  // Store dimensions
   screenWidth = screenW;
   screenHeight = screenH;
   originalWidth = originalW;
   originalHeight = originalH;
 
-  // Calculate scaling factors
   scaleX = (float)screenWidth / (float)originalWidth;
   scaleY = (float)screenHeight / (float)originalHeight;
   scale = scaleX;
 
   currentState = Gamestate::MENU;
 
-  // Load sounds and textures with validation
   if (FileExists("Audio/start.mp3"))
   {
     clickSound = LoadSound("Audio/start.mp3");
@@ -48,7 +45,6 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
     titlePosition = {(screenWidth - (titleTexture.width * titleScale)) / 2.0f, 20.0f * scale};
   }
 
-  // Initialize player with validation
   player = new Character("resource/player/Idle.png",
                          "resource/player/Idle_2.png",
                          "resource/player/Walk.png",
@@ -74,7 +70,6 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   SpriteLoader::LoadMainGameLayer(this);
   ButtonSprite::LoadSprites(startButton, exitButton, yesButton, noButton, resumeButton, backToMenuButton, settingIcon, scale);
 
-  // Init state helpers
   frameCounter = 0;
   dotCount = 0;
   maxDots = 3;
@@ -93,7 +88,6 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
     PlayMusicStream(backgroundMusic);
   }
 
-  // Camera
   camera.offset = {screenWidth / 2.0f, screenHeight / 2.0f};
   camera.target = {player->GetX(), player->GetY()};
   camera.rotation = 0.0f;
@@ -270,7 +264,6 @@ void Controller::UpdatePlaying()
   Vector2 playerPos = player ? Vector2{player->GetX(), player->GetY()} : Vector2{0, 0};
   float deltaTime = GetFrameTime();
 
-  // if (spawner)
   {
     spawner->Update(deltaTime, playerPos);
   }
@@ -283,7 +276,6 @@ void Controller::UpdatePlaying()
     if (main)
       main->UpdateLayer(scrollDelta);
 
-  // Update music
   if (!playingMusicStarted && !IsMusicStreamPlaying(playingMusic))
   {
     if (IsMusicStreamPlaying(backgroundMusic))

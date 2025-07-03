@@ -9,6 +9,9 @@ int main()
     const int originalWidth = 1920;
     const int originalHeight = 1080;
     InitWindow(screenWidth, screenHeight, "Mafia City");
+    Image icon = LoadImage("icon1.png");
+    SetWindowIcon(icon);
+    UnloadImage(icon);
     SetTargetFPS(60);
     Controller game;
 

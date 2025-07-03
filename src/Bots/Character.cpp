@@ -664,7 +664,7 @@ void Character::GetTextureAndAnimation(Texture2D &texture, Rectangle &source)
     break;
 
   default:
-    // Fallback to idle right
+
     texture = idleTexture;
     source = animation_frame(&idleRightAnim, 128, 128);
     break;

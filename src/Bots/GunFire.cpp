@@ -12,10 +12,9 @@ Gunfire::Gunfire(Texture2D tex, Vector2 pos, float spd, int dir)
 
 void Gunfire::Update(const Camera2D &camera)
 {
-  // Move
+
   position.x += speed * direction;
 
-  // Animate
   frameTimer += GetFrameTime();
   if (frameTimer >= frameTime)
   {
@@ -24,7 +23,6 @@ void Gunfire::Update(const Camera2D &camera)
     frameRec.x = currentFrame * frameWidth;
   }
 
-  // Camera bounds check for world scrolling
   Vector2 camMin = {
       camera.target.x - camera.offset.x / camera.zoom,
       camera.target.y - camera.offset.y / camera.zoom};

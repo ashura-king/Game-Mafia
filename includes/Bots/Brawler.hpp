@@ -15,24 +15,24 @@ public:
   void Smash(Vector2 targetPos);
 
 private:
-  // === Smash Mechanics ===
+  // Smash Mechanics
   bool isSmashing;
   float smashWindup;
   float smashWindupTimer;
   float smashCooldown;
   float smashCooldownTimer;
 
-  // === Charge Attack Mechanics ===
+  // Charge Attack Mechanics
   bool isCharging;
   float chargeCooldown;
   float chargeTimer;
   float chargeSpeedMultiplier;
 
-  // === Defensive Traits ===
+  // Defensive Traits
   bool stunImmune;
   float stunImmuneTimer;
 
-  // === Offensive Force ===
+  // Offensive Force
   float knockbackForce;
 };
 

@@ -13,34 +13,34 @@ public:
   void Punch(Vector2 targetPos) override;
 
 private:
-  // === Heavy Mechanics ===
+  // Heavy Mechanics
   float weight;
   bool isUnstoppable;
   float unstoppableTimer;
 
-  // === Devastating Attacks ===
+  // Devastating Attacks
   float groundPoundDamage;
   float groundPoundRadius;
   bool canGroundPound;
   float groundPoundCooldown;
 
-  // === Defensive Properties ===
+  // Defensive Properties
   float damageReduction;
   bool immuneToKnockdown;
   float armorRating;
 
-  // === Slow but Powerful ===
+  // Slow Powerful
   float chargeUpTime;
   float chargeUpTimer;
   bool isChargingUp;
   float devastatingAttackMultiplier;
 
-  // === Intimidation ===
+  // Intimidation
   float intimidationRadius;
   bool causesStunNearby;
   float intimidationCooldown;
 
-  // === Size Properties ===
+  // Size Properties
   float sizeMultiplier;
   float reachBonus;
 };

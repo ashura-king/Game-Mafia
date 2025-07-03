@@ -1,6 +1,6 @@
 #include "SettingMenu.hpp"
 #include "Button.hpp"
-#include "includes/GameType.hpp"
+#include "Layer/GameType.hpp"
 #include <raylib.h>
 
 class SettingPop

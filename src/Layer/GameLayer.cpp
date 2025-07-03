@@ -1,4 +1,4 @@
-// Gamelayer.cpp
+
 #include "Layer/GameLayer.hpp"
 #include <cmath>
 
@@ -17,7 +17,7 @@ Gamelayer::~Gamelayer()
 void Gamelayer::UpdateLayer(float cameraDelta)
 {
   scrollX -= cameraDelta * parallaxSpeed;
-  // Keep scrollX in [0, width)
+
   float width = texture.width * scale;
   scrollX = fmodf(scrollX, width);
   if (scrollX < 0)
@@ -31,12 +31,10 @@ void Gamelayer::Drawlayer()
 
   float startX = -scrollX;
 
-  // Draw at least two textures to fill screen
   for (float x = startX; x < screenWidth; x += width)
   {
     DrawTextureEx(texture, {x, yOffset}, 0.0f, scale, WHITE);
   }
 
-  // Extra draw to prevent 1px gap due to float rounding (just in case)
   DrawTextureEx(texture, {startX + width, yOffset}, 0.0f, scale, WHITE);
 }

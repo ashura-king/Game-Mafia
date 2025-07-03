@@ -48,7 +48,7 @@ void Heavy::UpdateAI(Vector2 playerPos, float deltaTime)
 {
   Bot::UpdateAI(playerPos, deltaTime);
 
-  // Update timers
+  // Update
   if (unstoppableTimer > 0)
     unstoppableTimer -= deltaTime;
   if (chargeUpTimer > 0)
@@ -58,12 +58,12 @@ void Heavy::UpdateAI(Vector2 playerPos, float deltaTime)
   if (intimidationCooldown > 0)
     intimidationCooldown -= deltaTime;
 
-  // Heavy bots become unstoppable when low health
+  // Heavy bots  unstoppable when low health
   if (health < maxHealth * 0.3f && !isUnstoppable)
   {
     isUnstoppable = true;
     unstoppableTimer = 5.0f;
-    speed *= 1.5f; // Rage speed boost
+    speed *= 1.5f;
   }
 
   if (unstoppableTimer <= 0)
@@ -75,7 +75,7 @@ void Heavy::UpdateAI(Vector2 playerPos, float deltaTime)
   if (playerSpotted && GetDistanceToPlayer(playerPos) <= attackRange &&
       canGroundPound && groundPoundCooldown <= 0)
   {
-    if (GetRandomValue(0, 100) < 20) // 20% chance
+    if (GetRandomValue(0, 100) < 20)
     {
       isChargingUp = true;
       chargeUpTimer = chargeUpTime;
@@ -83,20 +83,18 @@ void Heavy::UpdateAI(Vector2 playerPos, float deltaTime)
     }
   }
 
-  // Execute ground pound
   if (isChargingUp && chargeUpTimer <= 0)
   {
-    // Execute devastating area attack
+
     isChargingUp = false;
   }
 
-  // Intimidation effect
   if (intimidationCooldown <= 0 && playerSpotted)
   {
     float distToPlayer = GetDistanceToPlayer(playerPos);
     if (distToPlayer <= intimidationRadius)
     {
-      // Player gets intimidated/stunned briefly
+
       intimidationCooldown = 5.0f;
     }
   }

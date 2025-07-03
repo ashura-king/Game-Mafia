@@ -1,4 +1,4 @@
-#include "GameType.hpp"
+#include "Layer/GameType.hpp"
 #include "Layer/Layer.hpp"
 
 void Animation_Update(Animation *self)

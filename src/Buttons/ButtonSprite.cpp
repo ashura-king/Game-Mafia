@@ -23,7 +23,7 @@ SettingMenu *ButtonSprite::LoadSettingMenu(const std::string &first, const std::
 {
   if (FileExists(first.c_str()) && FileExists(hover.c_str()) && FileExists(click.c_str()))
   {
-    // Ensure arguments match the SettingMenu constructor signature
+
     return new SettingMenu(first.c_str(), hover.c_str(), click.c_str(), scale, useHover, useClick);
   }
   else

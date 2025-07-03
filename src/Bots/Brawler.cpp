@@ -63,7 +63,7 @@ void Brawler::UpdateAI(Vector2 playerPos, float deltaTime)
     smashWindupTimer += deltaTime;
     if (smashWindupTimer >= smashWindup)
     {
-      // TODO: Check collision & apply knockback here
+      // TODO:  collision &  knockback
       isSmashing = false;
       smashCooldownTimer = smashCooldown;
     }

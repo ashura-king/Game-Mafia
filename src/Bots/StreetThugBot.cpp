@@ -15,13 +15,11 @@ StreetThugBot::StreetThugBot(float spawnX, float spawnY)
 {
   LoadTextures(); // Load specific textures for this bot
                   // Optional: inherited pacing setup
-}
+};
 
-StreetThugBot::~StreetThugBot()
-{
-  // If you dynamically allocate textures or other memory, unload them here.
-  // Example: UnloadTexture(idleTexture); (only if you're managing them manually)
-}
+StreetThugBot::~StreetThugBot() {
+  //  unload them here.
+};
 
 void StreetThugBot::LoadTextures()
 {

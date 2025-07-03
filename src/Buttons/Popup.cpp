@@ -24,7 +24,7 @@ void Popup::DrawExitPopup(bool &running, bool &showExitPopup, Sound clickSound, 
 
   yesButton.Update();
   noButton.Update();
-  // Draw buttons
+
   yesButton.Draw();
   noButton.Draw();
 
