@@ -2,9 +2,7 @@
 #include <algorithm>
 #include <cmath>
 
-GameObject::GameObject() : lastSpawnX(0.0f)
-{
-}
+GameObject::GameObject() : lastSpawnX(0.0f) {}
 
 GameObject::~GameObject()
 {
@@ -32,7 +30,7 @@ void GameObject::ClearAllObjects()
   objects.clear();
 }
 
-void GameObjec::UpdateObjects(float cameraDelta)
+void GameObject::UpdateObjects(float cameraDelta)
 {
   // Update all objects
   for (auto &obj : objects)
@@ -57,7 +55,7 @@ void GameObject::DrawObjects()
   }
 }
 
-std::vector<Platform *> GameObjectManager::CheckCollisions(const Rectangle &playerBounds)
+std::vector<Platform *> GameObject::CheckCollisions(const Rectangle &playerBounds)
 {
   std::vector<Platform *> collisions;
 

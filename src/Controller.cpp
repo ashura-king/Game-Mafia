@@ -44,6 +44,11 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
     titleScale = scale * 3.0f;
     titlePosition = {(screenWidth - (titleTexture.width * titleScale)) / 2.0f, 20.0f * scale};
   }
+  gameObjectManager = new GameObject();
+
+  // Initialize ObjectSpawner with the manager
+  objectSpawner = new ObjectSpawner(gameObjectManager);
+  objectSpawner->LoadObjectFile();
 
   player = new Character("resource/player/Idle.png",
                          "resource/player/Idle_2.png",
@@ -248,6 +253,46 @@ void Controller::UpdatePlaying()
     player->HandleInput();
     player->Update(camera);
   }
+
+  if (gameObjectManager)
+  {
+    float cameraDelta = 0.0f;
+    gameObjectManager->UpdateObjects(cameraDelta);
+  }
+
+  // Spawn objects based on camera position
+  if (objectSpawner && player)
+  {
+    float spawnRange = screenWidth * 2.0f; // Spawn objects 2 screens ahead
+    objectSpawner->SpawnObjectInRange(camera.target.x, spawnRange);
+  }
+
+  // Check collisions between player and objects
+  if (player && gameObjectManager)
+  {
+    Rectangle playerBounds = player->GetBoundBox();
+    std::vector<Platform *> collisions = gameObjectManager->CheckCollisions(playerBounds);
+
+    for (Platform *obj : collisions)
+    {
+      // Handle object-specific collision
+      switch (obj->GetType())
+      {
+      case ObjectType::BARREL:
+        // e.g. push player back
+        break;
+      case ObjectType::CRATE:
+        // e.g. stop player movement
+        break;
+      case ObjectType::OLDCAR:
+        // e.g. block or damage
+        break;
+      default:
+        break;
+      }
+    }
+  }
+
   float px = player->GetX();
   float clampedX = Clamp(px, 0.0f, levelWidth - player->GetWidth());
   if (px != clampedX)
@@ -333,6 +378,9 @@ void Controller::DrawPlaying()
     if (main)
       main->Drawlayer();
 
+  if (gameObjectManager)
+    gameObjectManager->DrawObjects();
+
   if (player)
     player->Draw();
   EndMode2D();
@@ -361,6 +409,18 @@ void Controller::Unload()
   {
     delete spawner;
     spawner = nullptr;
+  }
+
+  if (objectSpawner)
+  {
+    delete objectSpawner;
+    objectSpawner = nullptr;
+  }
+
+  if (gameObjectManager)
+  {
+    delete gameObjectManager;
+    gameObjectManager = nullptr;
   }
 
   for (Gamelayer *main : mainlayers)

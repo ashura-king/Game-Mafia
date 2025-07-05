@@ -1,13 +1,16 @@
 #include "Platform/Platform.hpp"
 
-Platform::Platform(conts char *texturePath, float x, float y, float scale, ObjectType type)
+Platform::Platform(const char *texturePath, float x, float y, float scale, ObjectType type)
+    : texture(LoadTexture(texturePath)), // texture is declared first
+      position({x, y}),                  // matches order
+      type(type),
+      scale(scale),
+      active(true)
 {
-  :position({x,y}), scale(scale), type(type), active(true)
-
-  texture  = LoadTexture(texturePath);
+  texture = LoadTexture(texturePath);
   SetTextureFilter(texture, TEXTURE_FILTER_POINT);
 
-  collisionOffset = {0.0};
+  collisionOffset = {0.0f, 0.0f};
   collisionSize = {texture.width * scale, texture.height * scale};
 
   switch (type)
@@ -21,21 +24,23 @@ Platform::Platform(conts char *texturePath, float x, float y, float scale, Objec
     collisionSize = {texture.width * scale - scale * 4, texture.height * scale - scale * 4};
     break;
   case ObjectType::OLDCAR:
-    collisionOffset = {0.0};
-    collisionSize = {textture.width * scale, texture.height * scale};
+    collisionOffset = {0.0f, 0.0f};
+    collisionSize = {texture.width * scale, texture.height * scale};
     break;
   default:
     break;
   }
-};
+}
+
 Platform::~Platform()
 {
-  Unload(texture);
-};
-void Platform::Update(cameraDelta)
+  UnloadTexture(texture);
+}
+
+void Platform::Update(float cameraDelta)
 {
   position.x -= cameraDelta;
-  if (posiito.x < -texture.width * scale > 100)
+  if (position.x < -texture.width * scale - 100)
   {
     active = false;
   }
@@ -55,17 +60,18 @@ void Platform::Draw()
 
 Rectangle Platform::GetBoundBox() const
 {
-  position.x + collisionOffset.x;
-  position.y + collisionOffset.y;
-  collisionSize.x;
-  collisionSize.y;
+  return Rectangle{
+      position.x + collisionOffset.x,
+      position.y + collisionOffset.y,
+      collisionSize.x,
+      collisionSize.y};
 }
 
 bool Platform::CheckCollision(const Rectangle &other) const
 {
   if (!active)
-    return = false;
-  return CheckCollision(GetBoundBox(), other);
+    return false;
+  return CheckCollisionRecs(GetBoundBox(), other);
 }
 void Platform::SetPosition(float x, float y)
 {

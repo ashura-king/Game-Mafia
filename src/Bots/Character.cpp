@@ -690,3 +690,26 @@ void Character::Draw()
     bullet.Draw();
   }
 }
+bool Character::IsFalling() const
+{
+  return !isOnGround && jumpVelocity > 0;
+}
+
+void Character::SetOnGround(bool onGround)
+{
+  isOnGround = onGround;
+}
+
+void Character::SetYVelocity(float velocity)
+{
+  jumpVelocity = velocity;
+}
+
+float Character::GetYVelocity() const
+{
+  return jumpVelocity;
+}
+Rectangle Character::GetBoundBox() const
+{
+  return Rectangle{x, y, width, height};
+}

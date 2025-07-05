@@ -16,6 +16,8 @@
 #include "Bots/BotSpawner.hpp"
 #include "Layer/SpriteLoader.hpp"
 #include "Layer/ButtonSprite.hpp"
+#include "Platform/GameObject.hpp"
+#include "Platform/ObjectSpawner.hpp"
 
 class Controller
 {
@@ -34,6 +36,8 @@ public:
   bool IsRunning() const { return running; }
 
 private:
+  ObjectSpawner *objectSpawner;
+  GameObject *gameObjectManager;
   // Screen properties
   int screenWidth, screenHeight;
   int originalWidth, originalHeight;

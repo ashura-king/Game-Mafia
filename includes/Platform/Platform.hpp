@@ -2,16 +2,21 @@
 #include <raylib.h>
 #include <vector>
 #include <string>
+
+// Enum must be followed by a semicolon
 enum class ObjectType
 {
   BARREL,
   CRATE,
   OLDCAR,
   OBSTACLE
-} class Platform
+};
+
+// Class declaration syntax was broken
+class Platform
 {
 public:
-  Platform(conts char *texturePath, float x, float y, float scale = 1.0f, ObjectType type = ObjectType::OBSTACLE);
+  Platform(const char *texturePath, float x, float y, float scale = 1.0f, ObjectType type = ObjectType::OBSTACLE);
   ~Platform();
 
   void Update(float cameraDelta);
@@ -20,22 +25,24 @@ public:
   Rectangle GetBoundBox() const;
   bool CheckCollision(const Rectangle &other) const;
 
-  // Getters;
-  void GetPosition() const { return position; }
+  // Getters
+  Vector2 GetPosition() const { return position; }
   float GetScale() const { return scale; }
   ObjectType GetType() const { return type; }
   bool IsActive() const { return active; }
-  // Setter;
+
+  // Setters
   void SetPosition(float x, float y);
-  void SetActive(bool IsActive) { return active = IsActive; }
+  void SetActive(bool isActive) { active = isActive; }
 
 private:
   Texture2D texture;
   Vector2 position;
   ObjectType type;
+  float scale;
   bool active;
 
-  // collision
+  // Collision
   Vector2 collisionOffset;
   Vector2 collisionSize;
 };

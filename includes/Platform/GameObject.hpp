@@ -1,4 +1,3 @@
-
 #pragma once
 #include "Platform.hpp"
 #include <vector>
@@ -7,8 +6,8 @@
 class GameObject
 {
 public:
-  GameObjectManager();
-  ~GameObjectManager();
+  GameObject();
+  ~GameObject();
 
   // Object management
   void AddObject(const char *texturePath, float x, float y, float scale = 1.0f, ObjectType type = ObjectType::OBSTACLE);
@@ -20,12 +19,12 @@ public:
   void DrawObjects();
 
   // Collision detection
-  std::vector<GameObject *> CheckCollisions(const Rectangle &playerBounds);
+  std::vector<Platform *> CheckCollisions(const Rectangle &playerBounds);
   Platform *GetNearestObject(float x, float y, float maxDistance = 100.0f);
 
   // Getters
   size_t GetObjectCount() const { return objects.size(); }
-  const std::vector < std::unique_ptr<Platform> &GetObjects() const { return objects; }
+  const std::vector<std::unique_ptr<Platform>> &GetObjects() const { return objects; }
 
 private:
   std::vector<std::unique_ptr<Platform>> objects;

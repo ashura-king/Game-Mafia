@@ -143,6 +143,12 @@ public:
   void SetSize(float newWidth, float newHeight);
   Vector2 GetPosition() const { return position; }
 
+  void SetOnGround(bool onGround);
+  void SetYVelocity(float velocity);
+  float GetYVelocity() const;
+  bool IsFalling() const;
+  Rectangle GetBoundBox() const;
+
   Character(const Character &) = delete;
   Character &operator=(const Character &) = delete;
 };
