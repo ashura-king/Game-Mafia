@@ -38,23 +38,46 @@ void ObjectSpawner::LoadObjectFile()
   spawnData.push_back({"resource/Object/Barrel.png", 1100.0f, 400.0f, 1.1f, ObjectType::BARREL});
 
   // Old Car
-  spawnData.push_back({"resource/Object/oldcar.png", 750.0f, 300.0f, 0.5f, ObjectType::OLDCAR});
-  spawnData.push_back({"resource/Object/oldcar.png", 950.0f, 320.0f, 0.5f, ObjectType::OLDCAR});
+  spawnData.push_back({"resource/Object/oldcar.png", 750.0f, 420.0f, 1.0f, ObjectType::OLDCAR});
+  spawnData.push_back({"resource/Object/oldcar.png", 950.0f, 420.0f, 1.0f, ObjectType::OLDCAR});
 }
 
-void ObjectSpawner::SpawnObjectInRange(float cameraX, float spawnRange)
+void ObjectSpawner::SpawnObjectInRange(float cameraX, float spawnRange + 200.0f)
 {
-  for (const auto &spawn : spawnData)
-  {
-    // Check if object is within spawn range and hasn't been spawned yet
-    if (spawn.x > cameraX - 100 && spawn.x < cameraX + spawnRange && spawn.x > lastSpawnX)
+  float startX = cameraX;
+  float endX = cameraX + spawnRange;
+  float gap = 64.0f;
 
+  for (float x = startX; x < endX; x += gap)
+  {
+    if (x > lastSpawnX)
     {
-      objectManager->AddObject(spawn.texturePath.c_str(), spawn.x, spawn.y, spawn.scale, spawn.type);
+      int pattern = static_cast<int>(x / gap) % 3;
+      std::string texture;
+      ObjectType type;
+
+      switch (pattern)
+      {
+      case 0:
+        texture = "resource/Object/Crate.png";
+        type = ObjectType::CRATE;
+
+        break;
+      case 1:
+        texture = "resource/Object/Barrel.png";
+        type = ObjectType::BARREL;
+        break;
+      case 2:
+        texture = "resource/Object/oldcar.png";
+        type = ObjectType::OLDCAR;
+        break;
+      default:
+        break;
+      }
+      spawnData.push_back({texture, x, 420.0f, 1.0f, type});
     }
   }
-
-  lastSpawnX = cameraX + spawnRange;
+  lastSpawnX = endX;
 }
 
 void ObjectSpawner::SpawnCrate(float x, float y, float scale)

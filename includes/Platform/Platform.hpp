@@ -12,7 +12,6 @@ enum class ObjectType
   OBSTACLE
 };
 
-// Class declaration syntax was broken
 class Platform
 {
 public:

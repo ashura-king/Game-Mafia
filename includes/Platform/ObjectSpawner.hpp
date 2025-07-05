@@ -20,7 +20,7 @@ public:
   void LoadObject(const std::string &filename); // Load from specific file
   void LoadObjectFile();                        // Default behavior
 
-  void SpawnObjectInRange(float cameraX, float spawnRange = 1000.0f);
+  void SpawnObjectInRange(float cameraX, float spawnRange = 1000.0f + 200.0f);
 
   void SpawnCrate(float x, float y, float scale = 1.0f);
   void SpawnBarrel(float x, float y, float scale = 1.0f);

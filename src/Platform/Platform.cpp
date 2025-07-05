@@ -9,7 +9,8 @@ Platform::Platform(const char *texturePath, float x, float y, float scale, Objec
 {
   texture = LoadTexture(texturePath);
   SetTextureFilter(texture, TEXTURE_FILTER_POINT);
-
+  float textureHeight = texture.height * scale;
+  position = {x, y - textureHeight};
   collisionOffset = {0.0f, 0.0f};
   collisionSize = {texture.width * scale, texture.height * scale};
 
@@ -40,7 +41,7 @@ Platform::~Platform()
 void Platform::Update(float cameraDelta)
 {
   position.x -= cameraDelta;
-  if (position.x < -texture.width * scale - 100)
+  if (position.x < -texture.width * scale - 300)
   {
     active = false;
   }
