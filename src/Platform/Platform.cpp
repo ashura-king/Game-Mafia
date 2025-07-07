@@ -1,36 +1,22 @@
 #include "Platform/Platform.hpp"
+#include <raylib.h>
 
 Platform::Platform(const char *texturePath, float x, float y, float scale, ObjectType type)
-    : texture(LoadTexture(texturePath)), // texture is declared first
-      position({x, y}),                  // matches order
-      type(type),
-      scale(scale),
-      active(true)
+    : position({x, y}), type(type), scale(scale), active(true)
 {
   texture = LoadTexture(texturePath);
-  SetTextureFilter(texture, TEXTURE_FILTER_POINT);
-  float textureHeight = texture.height * scale;
-  position = {x, y - textureHeight};
-  collisionOffset = {0.0f, 0.0f};
-  collisionSize = {texture.width * scale, texture.height * scale};
 
-  switch (type)
+  // Optional: error check texture
+  if (texture.id <= 0)
   {
-  case ObjectType::CRATE:
-    collisionOffset = {0, 0};
-    collisionSize = {texture.width * scale, texture.height * scale};
-    break;
-  case ObjectType::BARREL:
-    collisionOffset = {scale * 2, scale * 2};
-    collisionSize = {texture.width * scale - scale * 4, texture.height * scale - scale * 4};
-    break;
-  case ObjectType::OLDCAR:
-    collisionOffset = {0.0f, 0.0f};
-    collisionSize = {texture.width * scale, texture.height * scale};
-    break;
-  default:
-    break;
+    TraceLog(LOG_WARNING, "Platform texture failed to load: %s", texturePath);
   }
+
+  // Set default collision area based on texture size and scale
+  collisionOffset = {0, 0};
+  collisionSize = {
+      static_cast<float>(texture.width) * scale,
+      static_cast<float>(texture.height) * scale};
 }
 
 Platform::~Platform()
@@ -40,23 +26,26 @@ Platform::~Platform()
 
 void Platform::Update(float cameraDelta)
 {
+  // Move with camera
   position.x -= cameraDelta;
-  if (position.x < -texture.width * scale - 300)
+
+  // Optional: deactivate if far off-screen
+  if (position.x < -texture.width * scale - 100)
   {
     active = false;
   }
 }
+
 void Platform::Draw()
 {
   if (!active)
     return;
 
-  DrawTextureEx(texture, position, 0.0, scale, WHITE);
+  DrawTextureEx(texture, position, 0.0f, scale, WHITE);
+  DrawRectangleLinesEx(GetBoundBox(), 1, RED);
 
-#ifdef DEBUG
-  Rectangle bbox = GetBoundingBox();
-  DrawRectangleLines(bbox.x, bbox.y, bbox.width, bbox.height, RED);
-#endif
+  // Optional: Debug bounding box
+  // DrawRectangleLinesEx(GetBoundBox(), 1, RED);
 }
 
 Rectangle Platform::GetBoundBox() const
@@ -74,8 +63,16 @@ bool Platform::CheckCollision(const Rectangle &other) const
     return false;
   return CheckCollisionRecs(GetBoundBox(), other);
 }
+
+bool Platform::IsInCameraView(float cameraX, float cameraWidth) const
+{
+  float objectRight = position.x + texture.width * scale;
+  float cameraRight = cameraX + cameraWidth;
+
+  return (objectRight >= cameraX) && (position.x <= cameraRight);
+}
+
 void Platform::SetPosition(float x, float y)
 {
-  position.x = x;
-  position.y = y;
+  position = {x, y};
 }

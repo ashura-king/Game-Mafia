@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 
-// Enum must be followed by a semicolon
 enum class ObjectType
 {
   BARREL,
@@ -23,6 +22,7 @@ public:
 
   Rectangle GetBoundBox() const;
   bool CheckCollision(const Rectangle &other) const;
+  bool IsInCameraView(float cameraX, float cameraWidth) const; // ✅ Declaration added
 
   // Getters
   Vector2 GetPosition() const { return position; }
