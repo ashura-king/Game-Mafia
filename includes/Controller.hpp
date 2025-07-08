@@ -36,9 +36,7 @@ public:
   bool IsRunning() const { return running; }
 
 private:
-  ObjectSpawner *objectSpawner;
-  GameObject *gameObjectManager;
-  // Screen properties
+   // Screen properties
   int screenWidth, screenHeight;
   int originalWidth, originalHeight;
   float scaleX, scaleY, scale;

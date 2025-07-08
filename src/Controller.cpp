@@ -267,11 +267,6 @@ void Controller::UpdatePlaying()
     }
   }
 
-  if (!landed && player->IsFalling())
-  {
-    player->SetOnGround(false);
-  }
-
   // Update camera to follow player AFTER player physics
   Vector2 playerPos = player->GetPosition();
   camera.target.x = playerPos.x + playerBounds.width / 2;
@@ -286,17 +281,7 @@ void Controller::UpdatePlaying()
     layer->UpdateLayer(camera.target.x);
   }
 
-  // Spawn objects based on camera position
-  if (objectSpawner)
-  {
-    objectSpawner->SpawnObjectInRange(camera.target.x, screenWidth * 1.5f);
-  }
-
   // Update objects with camera position for deactivation checks
-  gameObjectManager->UpdateObjects(camera.target.x, screenWidth);
-
-  // Store current camera position for next frame
-  lastCameraX = camera.target.x;
 }
 
 void Controller::DrawMenu()
