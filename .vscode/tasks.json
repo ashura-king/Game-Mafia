@@ -1,6 +1,6 @@
+// .vscode/tasks.json
+// Enhanced tasks configuration with auto-build functionality
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
         {
@@ -42,7 +42,15 @@
             },
             "problemMatcher": [
                 "$gcc"
-            ]
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
         },
         {
             "label": "build release",
@@ -81,7 +89,153 @@
                 "kind": "build",
                 "isDefault": false
             },
-            "detail": "compiler: C:\\raylib\\w64devkit\\bin\\g++.exe"
+            "detail": "compiler: C:\\raylib\\w64devkit\\bin\\g++.exe",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "clean",
+            "type": "process",
+            "command": "make",
+            "args": ["clean"],
+            "windows": {
+                "command": "C:/raylib/w64devkit/bin/mingw32-make.exe"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "run",
+            "type": "process",
+            "command": "make",
+            "args": ["run"],
+            "windows": {
+                "command": "C:/raylib/w64devkit/bin/mingw32-make.exe"
+            },
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "build and run debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "build debug",
+                "run"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "build and run release",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "build release",
+                "run"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "rebuild debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "clean",
+                "build debug"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "rebuild release",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "clean",
+                "build release"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "auto build watch (debug)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-ExecutionPolicy", "Bypass",
+                "-Command",
+                "& { Write-Host 'Starting Auto Build Watcher (Debug Mode)...' -ForegroundColor Green; $watcher = New-Object System.IO.FileSystemWatcher; $watcher.Path = '.'; $watcher.Filter = '*.cpp'; $watcher.IncludeSubdirectories = $true; $watcher.EnableRaisingEvents = $true; $action = { $path = $Event.SourceEventArgs.FullPath; $name = $Event.SourceEventArgs.Name; $changeType = $Event.SourceEventArgs.ChangeType; Write-Host \"File changed: $name ($changeType)\" -ForegroundColor Yellow; Start-Sleep -Seconds 1; Write-Host 'Building...' -ForegroundColor Cyan; & 'C:/raylib/w64devkit/bin/mingw32-make.exe' BUILD_MODE=DEBUG; if ($LASTEXITCODE -eq 0) { Write-Host 'Build successful!' -ForegroundColor Green } else { Write-Host 'Build failed!' -ForegroundColor Red } }; Register-ObjectEvent -InputObject $watcher -EventName 'Changed' -Action $action; Register-ObjectEvent -InputObject $watcher -EventName 'Created' -Action $action; Write-Host 'Watching for changes... Press Ctrl+C to stop' -ForegroundColor Yellow; try { while ($true) { Start-Sleep -Seconds 1 } } finally { $watcher.Dispose() } }"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated"
+            },
+            "isBackground": true,
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        },
+        {
+            "label": "auto build and run (debug)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-ExecutionPolicy", "Bypass",
+                "-Command",
+                "& { Write-Host 'Starting Auto Build and Run Watcher (Debug Mode)...' -ForegroundColor Green; $watcher = New-Object System.IO.FileSystemWatcher; $watcher.Path = '.'; $watcher.Filter = '*.cpp'; $watcher.IncludeSubdirectories = $true; $watcher.EnableRaisingEvents = $true; $action = { $path = $Event.SourceEventArgs.FullPath; $name = $Event.SourceEventArgs.Name; $changeType = $Event.SourceEventArgs.ChangeType; Write-Host \"File changed: $name ($changeType)\" -ForegroundColor Yellow; Start-Sleep -Seconds 1; Write-Host 'Building...' -ForegroundColor Cyan; & 'C:/raylib/w64devkit/bin/mingw32-make.exe' BUILD_MODE=DEBUG; if ($LASTEXITCODE -eq 0) { Write-Host 'Build successful! Running...' -ForegroundColor Green; & 'C:/raylib/w64devkit/bin/mingw32-make.exe' run } else { Write-Host 'Build failed!' -ForegroundColor Red } }; Register-ObjectEvent -InputObject $watcher -EventName 'Changed' -Action $action; Register-ObjectEvent -InputObject $watcher -EventName 'Created' -Action $action; Write-Host 'Watching for changes... Press Ctrl+C to stop' -ForegroundColor Yellow; Write-Host 'Initial build...' -ForegroundColor Cyan; & 'C:/raylib/w64devkit/bin/mingw32-make.exe' BUILD_MODE=DEBUG; if ($LASTEXITCODE -eq 0) { Write-Host 'Initial build successful!' -ForegroundColor Green } else { Write-Host 'Initial build failed!' -ForegroundColor Red }; try { while ($true) { Start-Sleep -Seconds 1 } } finally { $watcher.Dispose() } }"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated"
+            },
+            "isBackground": true,
+            "runOptions": {
+                "instanceLimit": 1
+            }
         }
     ]
 }

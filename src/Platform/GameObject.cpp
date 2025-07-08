@@ -32,10 +32,35 @@ void GameObject::ClearAllObjects()
 
 void GameObject::UpdateObjects(float cameraDelta)
 {
-  // Update all objects
+  // Updated to handle camera position-based deactivation
+  // Note: cameraDelta is now treated as cameraX position for deactivation checks
+  float cameraX = cameraDelta; // Reinterpret parameter as camera position
+  float screenWidth = 800.0f;  // Default screen width - should be passed from Controller
+
+  // Update all objects - don't move them with camera delta
+  // Objects should stay in their world positions
   for (auto &obj : objects)
   {
-    obj->Update(cameraDelta);
+    // Check if object should be deactivated
+    obj->CheckDeactivation(cameraX, screenWidth);
+  }
+
+  // Remove inactive objects periodically
+  static int frameCount = 0;
+  if (++frameCount % 60 == 0)
+  { // Clean up every 60 frames
+    RemoveInactiveObjects();
+  }
+}
+
+void GameObject::UpdateObjects(float cameraX, float screenWidth)
+{
+  // Update all objects - don't move them with camera delta
+  // Objects should stay in their world positions
+  for (auto &obj : objects)
+  {
+    // Check if object should be deactivated
+    obj->CheckDeactivation(cameraX, screenWidth);
   }
 
   // Remove inactive objects periodically
@@ -92,3 +117,12 @@ Platform *GameObject::GetNearestObject(float x, float y, float maxDistance)
 
   return nearest;
 }
+
+// Add method to get objects vector for iteration (if needed)
+// const std::vector<std::unique_ptr<Platform>>& GameObject::GetObjects() const
+// {
+//   return objects;
+// }
+
+// GetObjectCount() is already defined inline in the header as size_t
+// No need to implement it again here

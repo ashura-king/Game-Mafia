@@ -30,7 +30,7 @@ void ObjectSpawner::LoadObjectFile()
 {
   spawnData.clear();
   // Pre-defined object positions - these will be spawned when camera reaches them
-  float groundY = 420.0f;
+  float groundY = 440.0f; // Match this with player's groundY
 
   spawnData.push_back({"resource/Object/Crate.png", 500.0f, groundY, 1.0f, ObjectType::CRATE});
   spawnData.push_back({"resource/Object/Crate.png", 800.0f, groundY, 1.2f, ObjectType::CRATE});

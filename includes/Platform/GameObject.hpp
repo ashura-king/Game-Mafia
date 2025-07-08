@@ -15,7 +15,7 @@ public:
   void ClearAllObjects();
 
   // Update and render
-  void UpdateObjects(float cameraDelta);
+
   void DrawObjects();
 
   // Collision detection
@@ -25,6 +25,8 @@ public:
   // Getters
   size_t GetObjectCount() const { return objects.size(); }
   const std::vector<std::unique_ptr<Platform>> &GetObjects() const { return objects; }
+
+  void UpdateObjects(float cameraX, float screenWidth);
 
 private:
   std::vector<std::unique_ptr<Platform>> objects;

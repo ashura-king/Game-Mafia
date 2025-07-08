@@ -22,7 +22,7 @@ public:
 
   Rectangle GetBoundBox() const;
   bool CheckCollision(const Rectangle &other) const;
-  bool IsInCameraView(float cameraX, float cameraWidth) const; // ✅ Declaration added
+  bool IsInCameraView(float cameraX, float cameraWidth) const;
 
   // Getters
   Vector2 GetPosition() const { return position; }
@@ -33,6 +33,7 @@ public:
   // Setters
   void SetPosition(float x, float y);
   void SetActive(bool isActive) { active = isActive; }
+  void CheckDeactivation(float cameraX, float screenWidth);
 
 private:
   Texture2D texture;

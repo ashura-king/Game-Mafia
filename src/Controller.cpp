@@ -228,147 +228,6 @@ void Controller::UpdateGame()
   }
 }
 
-void Controller::UpdatePlaying()
-{
-  if (settingIcon)
-  {
-    settingIcon->Update();
-    if (settingIcon->WasClicked())
-    {
-      if (IsSoundValid(clickSound))
-        PlaySound(clickSound);
-      showSettingsPopup = true;
-      return;
-    }
-  }
-
-  if (showSettingsPopup)
-  {
-    return;
-  }
-
-  if (player)
-  {
-    player->HandleInput();
-    player->Update(camera);
-  }
-
-  // Store previous camera position for background scrolling
-  float previousCamX = camera.target.x;
-
-  // Update camera to follow player
-  if (player)
-  {
-    float px = player->GetX();
-    float py = player->GetY();
-
-    // Clamp player position within level bounds
-    float clampedX = Clamp(px, 0.0f, levelWidth - player->GetWidth());
-    if (px != clampedX)
-      player->SetPosition(clampedX, py);
-
-    // Update camera position
-    float minX = screenWidth / 2.0f;
-    float maxX = levelWidth - screenWidth / 2.0f;
-    float camX = Clamp(player->GetX(), minX, maxX);
-    float camY = screenHeight / 2.0f;
-
-    camera.target = {camX, camY};
-  }
-
-  // Calculate camera movement for background scrolling only
-  float cameraDelta = camera.target.x - previousCamX;
-
-  // Update game objects - they should stay in world coordinates
-  // Don't pass camera delta to objects since they use world coordinates
-  if (gameObjectManager)
-  {
-    gameObjectManager->UpdateObjects(0.0f); // Pass 0 delta - objects don't move with camera
-  }
-
-  // Spawn objects based on camera position
-  if (objectSpawner && player)
-  {
-    float spawnRange = screenWidth * 3.0f; // Increased spawn range for better visibility
-    objectSpawner->SpawnObjectInRange(camera.target.x, spawnRange);
-  }
-
-  // Check collisions between player and objects
-  if (player && gameObjectManager)
-  {
-    Rectangle playerBounds = player->GetBoundBox();
-    std::vector<Platform *> collisions = gameObjectManager->CheckCollisions(playerBounds);
-
-    bool landedOnObject = false;
-
-    for (Platform *obj : collisions)
-    {
-      Rectangle objBounds = obj->GetBoundBox();
-      Rectangle playerBounds = player->GetBoundBox();
-
-      float playerBottom = playerBounds.y + playerBounds.height;
-      float objTop = objBounds.y;
-
-      // Check if player is landing on top of object
-      bool isLanding =
-          playerBottom <= objTop + 10.0f &&                    // Close to top
-          player->GetYVelocity() >= 0 &&                       // Falling down
-          playerBounds.x + playerBounds.width > objBounds.x && // Horizontally overlapping
-          playerBounds.x < objBounds.x + objBounds.width;
-
-      if (isLanding)
-      {
-        player->SetGroundY(objTop); // Snap player ground to object top
-        player->IsOnGround();       // Optional: set velocity.y = 0
-        landedOnObject = true;
-      }
-    }
-
-    // If no object landed on, restore default ground
-    if (!landedOnObject)
-    {
-      player->SetGroundY(270.0f); // Or your default floor level
-    }
-  }
-
-  // Update other game entities
-  Vector2 playerPos = player ? Vector2{player->GetX(), player->GetY()} : Vector2{0, 0};
-  float deltaTime = GetFrameTime();
-
-  if (spawner)
-  {
-    spawner->Update(deltaTime, playerPos);
-  }
-
-  // Update background layers with camera movement (for parallax effect)
-  for (Gamelayer *main : mainlayers)
-    if (main)
-      main->UpdateLayer(cameraDelta);
-
-  // Handle music
-  if (!playingMusicStarted && !IsMusicStreamPlaying(playingMusic))
-  {
-    if (IsMusicStreamPlaying(backgroundMusic))
-      StopMusicStream(backgroundMusic);
-    PlayMusicStream(playingMusic);
-    SetMusicVolume(playingMusic, 0.5f);
-    playingMusicStarted = true;
-  }
-  if (IsMusicStreamPlaying(playingMusic))
-  {
-    UpdateMusicStream(playingMusic);
-  }
-
-// Debug output
-#ifdef DEBUG
-  if (player)
-  {
-    TraceLog(LOG_INFO, "Player pos: %.2f, %.2f | Camera: %.2f, %.2f",
-             player->GetX(), player->GetY(), camera.target.x, camera.target.y);
-  }
-#endif
-}
-
 void Controller::DrawMenu()
 {
   for (Layer *layer : menuLayers)
@@ -383,6 +242,76 @@ void Controller::DrawMenu()
   if (titleTexture.id > 0)
   {
     DrawTextureEx(titleTexture, titlePosition, 0.0f, titleScale, WHITE);
+  }
+  void Controller::UpdatePlaying()
+  {
+    // Store previous camera position for delta calculation
+    static float lastCameraX = camera.target.x;
+
+    // Update background music
+    UpdateMusicStream(playingMusic);
+
+    // Update player input and physics FIRST
+    player->HandleInput();
+    player->Update(camera);
+
+    // Apply gravity and collision with platform objects
+    Rectangle playerBounds = player->GetBoundBox();
+    std::vector<Platform *> collisions = gameObjectManager->CheckCollisions(playerBounds);
+
+    bool landed = false;
+    for (Platform *obj : collisions)
+    {
+      Rectangle objBounds = obj->GetBoundBox();
+      float playerBottom = playerBounds.y + playerBounds.height;
+      float objTop = objBounds.y;
+
+      bool verticallyAligned = playerBottom <= objTop + 10 && playerBottom >= objTop - 5;
+      bool horizontallyOverlapping =
+          playerBounds.x + playerBounds.width > objBounds.x &&
+          playerBounds.x < objBounds.x + objBounds.width;
+
+      if (player->IsFalling() && verticallyAligned && horizontallyOverlapping)
+      {
+        // Land on platform
+        player->SetPosition(playerBounds.x, objTop - playerBounds.height);
+        player->SetYVelocity(0.0f);
+        player->SetOnGround(true);
+        landed = true;
+        break;
+      }
+    }
+
+    if (!landed && player->IsFalling())
+    {
+      player->SetOnGround(false);
+    }
+
+    // Update camera to follow player AFTER player physics
+    Vector2 playerPos = player->GetPosition();
+    camera.target.x = playerPos.x + playerBounds.width / 2;
+
+    // Clamp camera to prevent going too far left
+    if (camera.target.x < screenWidth / 2)
+      camera.target.x = screenWidth / 2;
+
+    // Update parallax layers with camera position (not delta)
+    for (auto &layer : mainlayers)
+    {
+      layer->UpdateLayer(camera.target.x);
+    }
+
+    // Spawn objects based on camera position
+    if (objectSpawner)
+    {
+      objectSpawner->SpawnObjectInRange(camera.target.x, screenWidth * 1.5f);
+    }
+
+    // Update objects with camera position for deactivation checks
+    gameObjectManager->UpdateObjects(camera.target.x);
+
+    // Store current camera position for next frame
+    lastCameraX = camera.target.x;
   }
 
   if (showExitPop && yesButton && noButton)

@@ -1,5 +1,6 @@
 #include "Platform/Platform.hpp"
 #include <raylib.h>
+#include <vector>
 
 Platform::Platform(const char *texturePath, float x, float y, float scale, ObjectType type)
     : position({x, y}), type(type), scale(scale), active(true)
@@ -12,7 +13,7 @@ Platform::Platform(const char *texturePath, float x, float y, float scale, Objec
     TraceLog(LOG_WARNING, "Platform texture failed to load: %s", texturePath);
   }
 
-  // Set default collision area based on texture size and scale
+  // Set collision area - position.y is the TOP of the collision box
   collisionOffset = {0, 0};
   collisionSize = {
       static_cast<float>(texture.width) * scale,
@@ -26,14 +27,13 @@ Platform::~Platform()
 
 void Platform::Update(float cameraDelta)
 {
-  // Move with camera
-  position.x -= cameraDelta;
+  // Move with camera - but don't move if it's a static world object
+  // Only move UI elements or HUD objects with camera
+  // For world objects, they should stay in their world position
 
-  // Optional: deactivate if far off-screen
-  if (position.x < -texture.width * scale - 100)
-  {
-    active = false;
-  }
+  // Optional: deactivate if far off-screen (use world position)
+  // This should be based on camera position, not object position
+  // Remove this line or modify it based on camera position passed from Controller
 }
 
 void Platform::Draw()
@@ -41,11 +41,13 @@ void Platform::Draw()
   if (!active)
     return;
 
+  // Draw texture at the collision position
+  // No need to shift - the collision box and visual should match
   DrawTextureEx(texture, position, 0.0f, scale, WHITE);
-  DrawRectangleLinesEx(GetBoundBox(), 1, RED);
 
-  // Optional: Debug bounding box
-  // DrawRectangleLinesEx(GetBoundBox(), 1, RED);
+#ifdef DEBUG
+  DrawRectangleLinesEx(GetBoundBox(), 1, RED); // Debug bounding box
+#endif
 }
 
 Rectangle Platform::GetBoundBox() const
@@ -75,4 +77,14 @@ bool Platform::IsInCameraView(float cameraX, float cameraWidth) const
 void Platform::SetPosition(float x, float y)
 {
   position = {x, y};
+}
+
+// Add method to check if object should be deactivated
+void Platform::CheckDeactivation(float cameraX, float screenWidth)
+{
+  // Deactivate if object is too far behind camera
+  if (position.x + (texture.width * scale) < cameraX - screenWidth)
+  {
+    active = false;
+  }
 }
