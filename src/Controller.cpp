@@ -44,11 +44,6 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
     titleScale = scale * 3.0f;
     titlePosition = {(screenWidth - (titleTexture.width * titleScale)) / 2.0f, 20.0f * scale};
   }
-  gameObjectManager = new GameObject();
-
-  // Initialize ObjectSpawner with the manager
-  objectSpawner = new ObjectSpawner(gameObjectManager);
-  objectSpawner->LoadObjectFile();
 
   player = new Character("resource/player/Idle.png",
                          "resource/player/Idle_2.png",
@@ -97,6 +92,9 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   camera.target = {player->GetX(), player->GetY()};
   camera.rotation = 0.0f;
   camera.zoom = 1.0f;
+
+  collisionManager = new CollisionManager(270.0f);
+  collisionManager->CreateTestLevel();
 }
 void Controller::AddGamelayer(const std::string &file)
 {
@@ -230,58 +228,65 @@ void Controller::UpdateGame()
 
 void Controller::UpdatePlaying()
 {
-  // Store previous camera position for delta calculation
-  static float lastCameraX = camera.target.x;
+  float previousX = player->GetX();
 
-  // Update background music
+  // 🎵 Update music
   UpdateMusicStream(playingMusic);
 
-  // Update player input and physics FIRST
+  // 🎮 Handle player input and update
   player->HandleInput();
   player->Update(camera);
 
-  // Apply gravity and collision with platform objects
+  // 📦 Player's bounding box
   Rectangle playerBounds = player->GetBoundBox();
-  std::vector<Platform *> collisions = gameObjectManager->CheckCollisions(playerBounds);
 
-  bool landed = false;
-  for (Platform *obj : collisions)
+  // ⬅️➡️ Horizontal collision
+  Collision *horizontalCollision = collisionManager->CheckHorizontalCollision(playerBounds, previousX);
+  if (horizontalCollision)
   {
-    Rectangle objBounds = obj->GetBoundBox();
-    float playerBottom = playerBounds.y + playerBounds.height;
-    float objTop = objBounds.y;
-
-    bool verticallyAligned = playerBottom <= objTop + 10 && playerBottom >= objTop - 5;
-    bool horizontallyOverlapping =
-        playerBounds.x + playerBounds.width > objBounds.x &&
-        playerBounds.x < objBounds.x + objBounds.width;
-
-    if (player->IsFalling() && verticallyAligned && horizontallyOverlapping)
+    Rectangle objBounds = horizontalCollision->GetBoundBox();
+    if (player->GetX() > previousX)
     {
-      // Land on platform
-      player->SetPosition(playerBounds.x, objTop - playerBounds.height);
-      player->SetYVelocity(0.0f);
-      player->SetOnGround(true);
-      landed = true;
-      break;
+      player->SetPosition(objBounds.x - playerBounds.width, player->GetY());
+    }
+    else
+    {
+      player->SetPosition(objBounds.x + objBounds.width, player->GetY());
     }
   }
 
-  // Update camera to follow player AFTER player physics
-  Vector2 playerPos = player->GetPosition();
-  camera.target.x = playerPos.x + playerBounds.width / 2;
-
-  // Clamp camera to prevent going too far left
-  if (camera.target.x < screenWidth / 2)
-    camera.target.x = screenWidth / 2;
-
-  // Update parallax layers with camera position (not delta)
-  for (auto &layer : mainlayers)
+  // ⬇️ Vertical collision
+  Collision *verticalCollision = collisionManager->CheckVerticalCollision(playerBounds);
+  if (verticalCollision && player->IsFalling())
   {
-    layer->UpdateLayer(camera.target.x);
+    Rectangle objBounds = verticalCollision->GetBoundBox();
+    player->SetPosition(player->GetX(), objBounds.y - playerBounds.height);
+    player->SetYVelocity(0.0f);
+    player->SetOnGround(true);
+  }
+  else
+  {
+    player->SetOnGround(false);
   }
 
-  // Update objects with camera position for deactivation checks
+  // 🧱 Update collisions
+  collisionManager->Update(camera.target.x);
+
+  // 🎥 Smooth Metal Slug–style camera follow
+  float screenWidth = GetScreenWidth();
+  float offset = 100.0f; // Optional offset in front of player
+  float targetX = player->GetX() - screenWidth / 2.0f + offset;
+  camera.target.x += (targetX - camera.target.x) * 0.1f; // Smooth lerp
+
+  // 🌄 Update background parallax layers
+  static float lastCameraX = camera.target.x;
+  float cameraDelta = camera.target.x - lastCameraX;
+  lastCameraX = camera.target.x;
+
+  for (auto &layer : mainlayers)
+  {
+    layer->UpdateLayer(cameraDelta);
+  }
 }
 
 void Controller::DrawMenu()
@@ -327,8 +332,10 @@ void Controller::DrawPlaying()
     if (main)
       main->Drawlayer();
 
-  if (gameObjectManager)
-    gameObjectManager->DrawObjects();
+  if (collisionManager)
+  {
+    collisionManager->Draw();
+  }
 
   if (player)
     player->Draw();
@@ -342,19 +349,6 @@ void Controller::DrawPlaying()
     settingpop.DrawSettingPopup(showSettingsPopup, clickSound,
                                 *resumeButton, *backToMenuButton, currentState);
   }
-
-#ifdef DEBUG
-  // Draw debug info on screen
-  DrawText(TextFormat("Objects: %d", gameObjectManager ? gameObjectManager->GetObjectCount() : 0),
-           10, 10, 20, WHITE);
-  DrawText(TextFormat("Camera: %.2f, %.2f", camera.target.x, camera.target.y),
-           10, 35, 20, WHITE);
-  if (player)
-  {
-    DrawText(TextFormat("Player: %.2f, %.2f", player->GetX(), player->GetY()),
-             10, 60, 20, WHITE);
-  }
-#endif
 }
 
 void Controller::Unload()
@@ -373,16 +367,10 @@ void Controller::Unload()
     spawner = nullptr;
   }
 
-  if (objectSpawner)
+  if (collisionManager)
   {
-    delete objectSpawner;
-    objectSpawner = nullptr;
-  }
-
-  if (gameObjectManager)
-  {
-    delete gameObjectManager;
-    gameObjectManager = nullptr;
+    delete collisionManager;
+    collisionManager = nullptr;
   }
 
   for (Gamelayer *main : mainlayers)

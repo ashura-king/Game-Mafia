@@ -16,8 +16,8 @@
 #include "Bots/BotSpawner.hpp"
 #include "Layer/SpriteLoader.hpp"
 #include "Layer/ButtonSprite.hpp"
-#include "Platform/GameObject.hpp"
-#include "Platform/ObjectSpawner.hpp"
+#include "Platform/CollisionManager.hpp"
+#include "Platform/Collision.hpp"
 
 class Controller
 {
@@ -29,6 +29,7 @@ public:
   void Update();
   void Draw();
   void Unload();
+  void InitCollisionSystem();
 
   Camera2D camera;
   float levelWidth = 0.0f;
@@ -36,10 +37,11 @@ public:
   bool IsRunning() const { return running; }
 
 private:
-   // Screen properties
+  // Screen properties
   int screenWidth, screenHeight;
   int originalWidth, originalHeight;
   float scaleX, scaleY, scale;
+  CollisionManager *collisionManager;
 
   // Game state
   Gamestate currentState;

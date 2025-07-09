@@ -11,8 +11,7 @@ obj/Controller.o: src/Controller.cpp includes/Controller.hpp \
  includes/Bots/Heavy.hpp includes/Layer/SpriteLoader.hpp \
  includes/Layer/Layer.hpp includes/Layer/ButtonSprite.hpp \
  includes/Buttons/Button.hpp includes/Buttons/SettingMenu.hpp \
- includes/Platform/GameObject.hpp includes/Platform/Platform.hpp \
- includes/Platform/ObjectSpawner.hpp
+ includes/Platform/CollisionManager.hpp includes/Platform/Collision.hpp
 includes/Controller.hpp:
 C:/raylib/raylib/src/raylib.h:
 includes/Bots/Character.hpp:
@@ -38,6 +37,5 @@ includes/Layer/Layer.hpp:
 includes/Layer/ButtonSprite.hpp:
 includes/Buttons/Button.hpp:
 includes/Buttons/SettingMenu.hpp:
-includes/Platform/GameObject.hpp:
-includes/Platform/Platform.hpp:
-includes/Platform/ObjectSpawner.hpp:
+includes/Platform/CollisionManager.hpp:
+includes/Platform/Collision.hpp:
