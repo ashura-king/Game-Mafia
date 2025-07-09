@@ -124,13 +124,12 @@ Collision *CollisionManager::CheckVerticalCollision(const Rectangle &playerBound
 
 void CollisionManager::CreateTestLevel()
 {
-  AddBlockingObject("", 400.0f, 120.0f, 48.0f);            // Car 1
-  AddBlockingObject("", 600.0f, 108.0f, 52.0f);            // Car 2
-  AddBlockingObject("", 850.0f, 64.0f, 32.0f);             // Barrier
-  AddWall("", 1200.0f, 32.0f, 128.0f);                     // Wall
-  AddPlatform("", 500.0f, groundY - 40.0f, 128.0f, 32.0f); // Floating platform
+  AddBlockingObject("", 400.0f, 120.0f, 48.0f); // Car 1
+  AddBlockingObject("", 600.0f, 108.0f, 52.0f); // Car 2
+  AddBlockingObject("", 850.0f, 64.0f, 32.0f);  // Barrier
+  AddWall("", 1200.0f, 32.0f, 128.0f);          // Wall
+  AddPlatform("", 0.0f, groundY - 32.0f, 2000.0f, 32.0f);
 }
-AddPlatform("", 0.0f, groundY - 32.0f, 2000.0f, 32.0f);
 
 void CollisionManager::LoadFromFile(const std::string &filename)
 {
