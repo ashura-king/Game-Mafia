@@ -263,29 +263,39 @@ void Controller::UpdatePlaying()
     player->SetPosition(player->GetX(), objBounds.y - playerBounds.height);
     player->SetYVelocity(0.0f);
     player->SetOnGround(true);
+    player->SetOnGround(true);
+    player->SetYVelocity(0.0f);
   }
   else
   {
     player->SetOnGround(false);
   }
 
-  // 🧱 Update collisions
+  // 🔄 Update all collision objects
   collisionManager->Update(camera.target.x);
 
-  // 🎥 Smooth Metal Slug–style camera follow
+  // 🎥 Smooth Metal Slug-style camera follow
   float screenWidth = GetScreenWidth();
-  float offset = 100.0f; // Optional offset in front of player
-  float targetX = player->GetX() - screenWidth / 2.0f + offset;
-  camera.target.x += (targetX - camera.target.x) * 0.1f; // Smooth lerp
 
-  // 🌄 Update background parallax layers
+  float targetX = player->GetX() - screenWidth / 2.0f;
+
+  camera.target.x += (targetX - camera.target.x) * 0.1f;
+
+  // ✅ Clamp camera to left and right edges of the level
+  if (camera.target.x < screenWidth / 2.0f)
+    camera.target.x = screenWidth / 2.0f;
+
+  if (camera.target.x > levelWidth - screenWidth / 2.0f)
+    camera.target.x = levelWidth - screenWidth / 2.0f;
+
   static float lastCameraX = camera.target.x;
   float cameraDelta = camera.target.x - lastCameraX;
   lastCameraX = camera.target.x;
 
   for (auto &layer : mainlayers)
   {
-    layer->UpdateLayer(cameraDelta);
+    if (layer)
+      layer->UpdateLayer(cameraDelta);
   }
 }
 
@@ -349,6 +359,11 @@ void Controller::DrawPlaying()
     settingpop.DrawSettingPopup(showSettingsPopup, clickSound,
                                 *resumeButton, *backToMenuButton, currentState);
   }
+
+#ifdef DEBUG
+  DrawText(TextFormat("Player Y: %.2f", player->GetY()), 10, 10, 20, RED);
+  DrawText(TextFormat("OnGround: %s", player->IsOnGround() ? "true" : "false"), 10, 30, 20, RED);
+#endif
 }
 
 void Controller::Unload()
