@@ -261,7 +261,7 @@ void Controller::UpdatePlaying()
   if (settingIcon)
   {
     settingIcon->Update();
-    if (settingIcon->WasClicked())
+    if (settingIcon->IsClicked())
     {
       showSettingsPopup = true;
       if (IsSoundValid(clickSound))
@@ -304,68 +304,68 @@ void Controller::UpdatePlaying()
     player->SetPosition(maxX, player->GetY());
 
   // FIXED: Vertical collision and ground detection
+  bool wasOnGround = player->IsOnGround();
   Collision *verticalCollision = collisionManager->CheckVerticalCollision(playerBounds);
+
   if (verticalCollision)
   {
     Rectangle objBounds = verticalCollision->GetBoundBox();
-
-    // Check if player is landing on top of the platform
     float playerBottom = playerBounds.y + playerBounds.height;
     float objTop = objBounds.y;
 
-    // If player is on top of the platform (with some tolerance)
-    if (playerBottom >= objTop - 5.0f && playerBottom <= objTop + 10.0f)
+    // Check if player is falling and landing on platform
+    if (player->GetYVelocity() >= 0 && playerBottom >= objTop && playerBottom <= objTop + 15.0f)
     {
+      // Snap player to platform surface
       player->SetPosition(player->GetX(), objBounds.y - playerBounds.height);
       player->SetYVelocity(0.0f);
       player->SetOnGround(true);
     }
-    else
-    {
-      // Player is colliding but not on top (e.g., hitting from side)
-      player->SetOnGround(false);
-    }
   }
   else
   {
-    // No vertical collision, player is in air
-    player->SetOnGround(false);
+    // Check if player fell off a platform
+    if (wasOnGround && player->GetYVelocity() >= 0)
+    {
+      player->SetOnGround(false);
+    }
   }
 
   // Update collision based on current camera position
   collisionManager->Update(camera.target.x);
 
-  // ==== 📷 CAMERA: METAL SLUG STYLE FOLLOW ====
+  // ==== 📷 CLASSIC METAL SLUG CAMERA SYSTEM ====
   float halfScreenWidth = screenWidth / 2.0f;
-  Vector2 playerCenter = {
-      player->GetX() + player->GetWidth() / 2.0f,
-      player->GetY() + player->GetHeight() / 2.0f};
+  float playerX = player->GetX();
+  float playerCenterX = playerX + player->GetWidth() / 2.0f;
 
-  // Metal Slug style: Camera follows player but with some lag
-  float followSpeed = 0.05f; // Slower follow for Metal Slug feel
-  float targetCameraX = playerCenter.x;
+  // Metal Slug style: Camera follows player with specific rules
+  float targetCameraX = camera.target.x;
 
-  // Create a "dead zone" in the center where camera doesn't move
-  float deadZoneWidth = screenWidth * 0.3f; // 30% of screen width
-  float cameraLeftBound = camera.target.x - deadZoneWidth / 2.0f;
-  float cameraRightBound = camera.target.x + deadZoneWidth / 2.0f;
+  // Create zones based on screen thirds
+  float leftZone = camera.target.x - halfScreenWidth * 0.6f;  // Left 40% of screen
+  float rightZone = camera.target.x + halfScreenWidth * 0.2f; // Right 20% of screen
 
-  // Only move camera if player is outside the dead zone
-  if (playerCenter.x < cameraLeftBound)
+  // CLASSIC METAL SLUG BEHAVIOR:
+  // - Camera starts moving when player reaches 20% from right edge
+  // - Camera stops when player reaches 40% from left edge
+  // - This creates the classic "push the camera forward" feel
+
+  if (playerCenterX > rightZone)
   {
-    targetCameraX = playerCenter.x + deadZoneWidth / 2.0f;
+    // Player is too far right, move camera forward
+    targetCameraX = playerCenterX - halfScreenWidth * 0.2f;
   }
-  else if (playerCenter.x > cameraRightBound)
+  else if (playerCenterX < leftZone)
   {
-    targetCameraX = playerCenter.x - deadZoneWidth / 2.0f;
+    // Player is too far left, move camera backward (but slowly)
+    targetCameraX = playerCenterX + halfScreenWidth * 0.6f;
   }
-  else
-  {
-    targetCameraX = camera.target.x; // Stay in place
-  }
+  // If player is in the middle zone, camera stays put
 
-  // Smooth camera movement
-  camera.target.x += (targetCameraX - camera.target.x) * followSpeed;
+  // Smooth camera movement (Metal Slug has instant movement, but smooth feels better)
+  float cameraSpeed = 0.1f; // Adjust this for camera responsiveness
+  camera.target.x += (targetCameraX - camera.target.x) * cameraSpeed;
 
   // Clamp camera to level bounds
   float cameraMinX = halfScreenWidth;
@@ -380,14 +380,14 @@ void Controller::UpdatePlaying()
     camera.target.x = cameraMaxX;
   }
 
-  // Lock Y-axis like Metal Slug (keep camera at fixed height)
-  camera.target.y = 350.0f; // Adjust this value to show the right vertical area
+  // Lock Y-axis like Metal Slug (fixed camera height)
+  camera.target.y = 350.0f; // Adjust this to show the right vertical area
 
   // ✅ Camera delta for parallax update
   static float lastCameraX = camera.target.x;
   float cameraDelta = camera.target.x - lastCameraX;
 
-  // If camera is clamped, use player's movement for parallax
+  // Handle parallax when camera is at boundaries
   if (fabs(cameraDelta) < 0.01f)
   {
     float playerDelta = player->GetX() - previousX;

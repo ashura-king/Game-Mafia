@@ -276,9 +276,12 @@ void Character::HandleInput()
     StopMoving();
   }
 
-  if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))
+  if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP && isOnGround))
   {
     Jump();
+    jumpVelocity = -jumpSpeed; // Negative for upward movement
+    isJumping = true;
+    isOnGround = false;
   }
 
   if ((IsKeyDown(KEY_J) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) && fireTimer <= 0.0f)
@@ -343,14 +346,18 @@ void Character::UpdateAnimations()
 
 void Character::UpdateJumpAnimation()
 {
-  if (isJumping)
+  if (!isOnGround)
   {
     jumpVelocity += gravity;
     y += jumpVelocity;
   }
   else
   {
-    jumpVelocity = 0.0f;
+    // Reset velocity when on ground, but don't override collision detection
+    if (jumpVelocity > 0) // Only reset if falling
+    {
+      jumpVelocity = 0.0f;
+    }
   }
 }
 
