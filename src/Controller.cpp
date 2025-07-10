@@ -89,6 +89,7 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   playingMusicStarted = false;
   running = true;
   showExitPop = false;
+  showSettingsPopup = false; // Make sure this is initialized
   spawner = new BotSpawner();
   popup = Popup();
 
@@ -247,15 +248,35 @@ void Controller::UpdateGame()
     if (gameTimer >= fadeDuration)
     {
       fadeOutComplete = true;
-
       currentState = Gamestate::PLAYING;
     }
   }
 }
+
 void Controller::UpdatePlaying()
 {
-  float previousX = player->GetX();
   UpdateMusicStream(playingMusic);
+
+  // Handle settings icon first - always allow this
+  if (settingIcon)
+  {
+    settingIcon->Update();
+    if (settingIcon->WasClicked())
+    {
+      showSettingsPopup = true;
+      if (IsSoundValid(clickSound))
+        PlaySound(clickSound);
+    }
+  }
+
+  // If settings popup is showing, don't update game logic
+  if (showSettingsPopup)
+  {
+    return; // Exit early, only the popup will be drawn
+  }
+
+  // Normal game logic continues here...
+  float previousX = player->GetX();
 
   // 🎮 Handle player input and update
   player->HandleInput();
@@ -282,8 +303,7 @@ void Controller::UpdatePlaying()
   else if (player->GetX() > maxX)
     player->SetPosition(maxX, player->GetY());
 
-  // Vertical collision
-  // Vertical collision
+  // FIXED: Vertical collision and ground detection
   Collision *verticalCollision = collisionManager->CheckVerticalCollision(playerBounds);
   if (verticalCollision)
   {
@@ -293,8 +313,8 @@ void Controller::UpdatePlaying()
     float playerBottom = playerBounds.y + playerBounds.height;
     float objTop = objBounds.y;
 
-    // If player is on top of the platform (not falling through it)
-    if (playerBottom >= objTop - 5 && playerBottom <= objTop + 10)
+    // If player is on top of the platform (with some tolerance)
+    if (playerBottom >= objTop - 5.0f && playerBottom <= objTop + 10.0f)
     {
       player->SetPosition(player->GetX(), objBounds.y - playerBounds.height);
       player->SetYVelocity(0.0f);
@@ -302,11 +322,13 @@ void Controller::UpdatePlaying()
     }
     else
     {
+      // Player is colliding but not on top (e.g., hitting from side)
       player->SetOnGround(false);
     }
   }
   else
   {
+    // No vertical collision, player is in air
     player->SetOnGround(false);
   }
 
@@ -426,7 +448,6 @@ void Controller::DrawGame()
 
 void Controller::DrawPlaying()
 {
-
   BeginMode2D(camera);
   for (Gamelayer *main : mainlayers)
     if (main)
@@ -453,6 +474,8 @@ void Controller::DrawPlaying()
 #ifdef DEBUG
   DrawText(TextFormat("Player Y: %.2f", player->GetY()), 10, 10, 20, RED);
   DrawText(TextFormat("OnGround: %s", player->IsOnGround() ? "true" : "false"), 10, 30, 20, RED);
+  DrawText(TextFormat("Y Velocity: %.2f", player->GetYVelocity()), 10, 50, 20, RED);
+  DrawText(TextFormat("Settings: %s", showSettingsPopup ? "true" : "false"), 10, 70, 20, RED);
 #endif
 }
 

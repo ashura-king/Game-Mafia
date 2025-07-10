@@ -347,15 +347,10 @@ void Character::UpdateJumpAnimation()
   {
     jumpVelocity += gravity;
     y += jumpVelocity;
-
-    // Landing condition
-    if (y >= groundY - height)
-    {
-      y = groundY - height;
-      isJumping = false;
-      isOnGround = true;
-      jumpVelocity = 0.0f;
-    }
+  }
+  else
+  {
+    jumpVelocity = 0.0f;
   }
 }
 
