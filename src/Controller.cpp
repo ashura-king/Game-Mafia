@@ -45,6 +45,14 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
     titlePosition = {(screenWidth - (titleTexture.width * titleScale)) / 2.0f, 20.0f * scale};
   }
 
+  float groundY = 600.0f;
+
+  collisionManager = new CollisionManager(groundY);
+  collisionManager->CreateTestLevel();
+
+  float characterHeight = 128.0f * 2;               // your character's height
+  float spawnY = groundY - 32.0f - characterHeight; // standing on top of platform
+
   player = new Character("resource/player/Idle.png",
                          "resource/player/Idle_2.png",
                          "resource/player/Walk.png",
@@ -89,12 +97,9 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   }
 
   camera.offset = {screenWidth / 2.0f, screenHeight / 2.0f};
-  camera.target = {player->GetX(), player->GetY()};
+  camera.target = {player->GetX() + player->GetWidth() / 2.0f, player->GetY() + player->GetHeight() / 2.0f};
   camera.rotation = 0.0f;
   camera.zoom = 1.0f;
-
-  collisionManager = new CollisionManager(270.0f);
-  collisionManager->CreateTestLevel();
 }
 void Controller::AddGamelayer(const std::string &file)
 {
@@ -229,33 +234,26 @@ void Controller::UpdateGame()
 void Controller::UpdatePlaying()
 {
   float previousX = player->GetX();
-
-  // 🎵 Update music
   UpdateMusicStream(playingMusic);
 
   // 🎮 Handle player input and update
   player->HandleInput();
   player->Update(camera);
 
-  // 📦 Player's bounding box
   Rectangle playerBounds = player->GetBoundBox();
 
-  // ⬅️➡️ Horizontal collision
+  // Horizontal collision
   Collision *horizontalCollision = collisionManager->CheckHorizontalCollision(playerBounds, previousX);
   if (horizontalCollision)
   {
     Rectangle objBounds = horizontalCollision->GetBoundBox();
     if (player->GetX() > previousX)
-    {
       player->SetPosition(objBounds.x - playerBounds.width, player->GetY());
-    }
     else
-    {
       player->SetPosition(objBounds.x + objBounds.width, player->GetY());
-    }
   }
 
-  // ⬇️ Vertical collision
+  // Vertical collision
   Collision *verticalCollision = collisionManager->CheckVerticalCollision(playerBounds);
   if (verticalCollision && player->IsFalling())
   {
@@ -263,35 +261,44 @@ void Controller::UpdatePlaying()
     player->SetPosition(player->GetX(), objBounds.y - playerBounds.height);
     player->SetYVelocity(0.0f);
     player->SetOnGround(true);
-    player->SetOnGround(true);
-    player->SetYVelocity(0.0f);
   }
   else
   {
     player->SetOnGround(false);
   }
 
-  // 🔄 Update all collision objects
+  // Update collision based on current camera position
   collisionManager->Update(camera.target.x);
 
-  // 🎥 Smooth Metal Slug-style camera follow
-  float screenWidth = GetScreenWidth();
+  // ==== 📷 CAMERA: METAL SLUG STYLE FOLLOW ====
+  float halfScreenWidth = GetScreenWidth() / 2.0f;
+  Vector2 playerCenter = {
+      player->GetX() + player->GetWidth() / 2.0f,
+      player->GetY() + player->GetHeight() / 2.0f};
 
-  float targetX = player->GetX() - screenWidth / 2.0f;
+  // Smooth follow horizontally
+  camera.target.x += (playerCenter.x - camera.target.x) * 0.3f;
 
-  camera.target.x += (targetX - camera.target.x) * 0.1f;
+  // Clamp camera inside level bounds
+  if (camera.target.x < halfScreenWidth)
+    camera.target.x = halfScreenWidth;
+  if (camera.target.x > levelWidth - halfScreenWidth)
+    camera.target.x = levelWidth - halfScreenWidth;
 
-  // ✅ Clamp camera to left and right edges of the level
-  if (camera.target.x < screenWidth / 2.0f)
-    camera.target.x = screenWidth / 2.0f;
+  // Lock Y-axis like Metal Slug
+  camera.target.y = 270.0f;
 
-  if (camera.target.x > levelWidth - screenWidth / 2.0f)
-    camera.target.x = levelWidth - screenWidth / 2.0f;
-
+  // ✅ Camera delta for parallax update
   static float lastCameraX = camera.target.x;
   float cameraDelta = camera.target.x - lastCameraX;
+
+  // If clamped, use player's movement delta to keep parallax alive
+  if (fabs(cameraDelta) < 0.01f)
+    cameraDelta = player->GetX() - previousX;
+
   lastCameraX = camera.target.x;
 
+  // Update layers with delta
   for (auto &layer : mainlayers)
   {
     if (layer)
