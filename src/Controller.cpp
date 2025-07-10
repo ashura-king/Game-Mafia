@@ -261,7 +261,7 @@ void Controller::UpdatePlaying()
   if (settingIcon)
   {
     settingIcon->Update();
-    if (settingIcon->IsClicked())
+    if (settingIcon->WasClicked())
     {
       showSettingsPopup = true;
       if (IsSoundValid(clickSound))
