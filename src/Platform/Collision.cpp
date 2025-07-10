@@ -39,9 +39,12 @@ void Collision::Draw()
   }
   else
   {
-    Color color;
+    Color color = WHITE;
     switch (type)
     {
+    case CollisionType::PLATFORM:
+      color = BROWN;
+      break;
     case CollisionType::BLOCKING:
       color = RED;
       break;

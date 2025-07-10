@@ -45,7 +45,7 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
     titlePosition = {(screenWidth - (titleTexture.width * titleScale)) / 2.0f, 20.0f * scale};
   }
 
-  float groundY = 600.0f;
+  float groundY = 270.0f;
 
   collisionManager = new CollisionManager(groundY);
   collisionManager->CreateTestLevel();
@@ -63,7 +63,7 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
                          "Audio/Gun.mp3",
                          "Audio/Attack.mp3",
                          "resource/player/bullet.png",
-                         120.0f, 270.0f, 2.0f);
+                         120.0f, spawnY, 2.0f);
   if (player)
   {
     player->SetJumpSpeed(15.0f);
