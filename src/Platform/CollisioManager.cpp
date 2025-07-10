@@ -1,3 +1,4 @@
+// Fixed CollisionManager.cpp for Flat Horizontal Run-and-Gun Game
 #include "Platform/CollisionManager.hpp"
 #include <fstream>
 #include <sstream>
@@ -64,12 +65,13 @@ std::vector<Collision *> CollisionManager::CheckCollision(const Rectangle &playe
   {
     if (obj->GetIsActive() && CheckCollisionRecs(playerBounds, obj->GetBoundBox()))
     {
-      collisions.push_back(obj.get()); // fixed: was 'collision.push_back(...)'
+      collisions.push_back(obj.get());
     }
   }
   return collisions;
 }
 
+// For horizontal run-and-gun: Only block movement when player is on ground level
 Collision *CollisionManager::CheckHorizontalCollision(const Rectangle &playerBounds, float previousX)
 {
   for (auto &obj : objects)
@@ -77,7 +79,7 @@ Collision *CollisionManager::CheckHorizontalCollision(const Rectangle &playerBou
     if (!obj->GetIsActive())
       continue;
 
-    CollisionType type = obj->GetCollision(); // fixed: was GetCollision()
+    CollisionType type = obj->GetCollision();
     if (type != CollisionType::BLOCKING && type != CollisionType::WALL)
       continue;
 
@@ -86,9 +88,13 @@ Collision *CollisionManager::CheckHorizontalCollision(const Rectangle &playerBou
     if (CheckCollisionRecs(playerBounds, objBounds))
     {
       float playerBottom = playerBounds.y + playerBounds.height;
+      float playerTop = playerBounds.y;
       float objTop = objBounds.y;
+      float objBottom = objBounds.y + objBounds.height;
 
-      if (playerBottom > objTop + 10)
+      // Only block horizontal movement if player is at ground level
+      // Allow jumping over obstacles
+      if (playerBottom > objTop + 10.0f && playerTop < objBottom - 10.0f)
       {
         return obj.get();
       }
@@ -98,8 +104,13 @@ Collision *CollisionManager::CheckHorizontalCollision(const Rectangle &playerBou
   return nullptr;
 }
 
+// Simple ground check - player should always return to ground level
 Collision *CollisionManager::CheckVerticalCollision(const Rectangle &playerBounds)
 {
+  // For flat run-and-gun, always return to ground level
+  float playerBottom = playerBounds.y + playerBounds.height;
+
+  // Check if player should land on an obstacle while jumping
   for (auto &obj : objects)
   {
     if (!obj->GetIsActive())
@@ -107,28 +118,41 @@ Collision *CollisionManager::CheckVerticalCollision(const Rectangle &playerBound
 
     Rectangle objBounds = obj->GetBoundBox();
 
-    if (CheckCollisionRecs(playerBounds, objBounds))
-    {
-      float playerBottom = playerBounds.y + playerBounds.height;
-      float objTop = objBounds.y;
+    float playerLeft = playerBounds.x;
+    float playerRight = playerBounds.x + playerBounds.width;
+    float objLeft = objBounds.x;
+    float objRight = objBounds.x + objBounds.width;
+    float objTop = objBounds.y;
 
-      if (playerBottom >= objTop - 10 && playerBottom <= objTop + 30)
-      {
-        return obj.get();
-      }
+    // Check if player is above obstacle and falling
+    bool horizontalOverlap = (playerRight > objLeft + 5.0f) && (playerLeft < objRight - 5.0f);
+
+    if (horizontalOverlap && playerBottom >= objTop && playerBottom <= objTop + 15.0f)
+    {
+      return obj.get();
     }
   }
 
   return nullptr;
 }
 
+// Check if player is on ground level
+bool CollisionManager::IsPlayerOnGroundLevel(const Rectangle &playerBounds)
+{
+  float playerBottom = playerBounds.y + playerBounds.height;
+  return (playerBottom >= groundY - 5.0f);
+}
+
 void CollisionManager::CreateTestLevel()
 {
-  AddBlockingObject("", 400.0f, 120.0f, 48.0f); // Car 1
-  AddBlockingObject("", 600.0f, 108.0f, 52.0f); // Car 2
-  AddBlockingObject("", 850.0f, 64.0f, 32.0f);  // Barrier
-  AddWall("", 1200.0f, 32.0f, 128.0f);          // Wall
-  AddPlatform("", 0.0f, groundY - 32.0f, 2000.0f, 32.0f);
+  // Create obstacles that can be jumped over
+  AddBlockingObject("", 400.0f, 120.0f, 48.0f); // Car 1 - can jump over
+  AddBlockingObject("", 600.0f, 108.0f, 52.0f); // Car 2 - can jump over
+  AddBlockingObject("", 850.0f, 64.0f, 32.0f);  // Barrier - can jump over
+  AddWall("", 1200.0f, 32.0f, 128.0f);          // Wall - needs higher jump
+
+  // Ground platform (invisible ground collision)
+  AddPlatform("", 0.0f, groundY, 2000.0f, 32.0f);
 }
 
 void CollisionManager::LoadFromFile(const std::string &filename)

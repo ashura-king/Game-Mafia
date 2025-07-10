@@ -276,7 +276,7 @@ void Character::HandleInput()
     StopMoving();
   }
 
-  if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP) && isOnGround)
+  if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))
   {
     Jump();
     jumpVelocity = -jumpSpeed; // Negative for upward movement

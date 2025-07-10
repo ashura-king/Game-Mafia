@@ -252,7 +252,7 @@ void Controller::UpdateGame()
     }
   }
 }
-
+// Fixed UpdatePlaying method for Flat Horizontal Run-and-Gun Game
 void Controller::UpdatePlaying()
 {
   UpdateMusicStream(playingMusic);
@@ -272,11 +272,12 @@ void Controller::UpdatePlaying()
   // If settings popup is showing, don't update game logic
   if (showSettingsPopup)
   {
-    return; // Exit early, only the popup will be drawn
+    return;
   }
 
-  // Normal game logic continues here...
+  // Store previous position
   float previousX = player->GetX();
+  float previousY = player->GetY();
 
   // 🎮 Handle player input and update
   player->HandleInput();
@@ -284,50 +285,76 @@ void Controller::UpdatePlaying()
 
   Rectangle playerBounds = player->GetBoundBox();
 
-  // Horizontal collision
+  // === HORIZONTAL COLLISION (Only when on ground) ===
   Collision *horizontalCollision = collisionManager->CheckHorizontalCollision(playerBounds, previousX);
   if (horizontalCollision)
   {
     Rectangle objBounds = horizontalCollision->GetBoundBox();
-    if (player->GetX() > previousX)
-      player->SetPosition(objBounds.x - playerBounds.width, player->GetY());
-    else
+
+    // Push player back to the side of the obstacle
+    if (player->GetX() > previousX) // Moving right
+    {
+      player->SetPosition(objBounds.x - player->GetWidth(), player->GetY());
+    }
+    else // Moving left
+    {
       player->SetPosition(objBounds.x + objBounds.width, player->GetY());
+    }
   }
 
-  // Clamp player within level bounds
+  // === LEVEL BOUNDARY CLAMPING ===
   float minX = 0.0f;
   float maxX = levelWidth - player->GetWidth();
   if (player->GetX() < minX)
-    player->SetPosition(minX, player->GetY());
-  else if (player->GetX() > maxX)
-    player->SetPosition(maxX, player->GetY());
-
-  // FIXED: Vertical collision and ground detection
-  bool wasOnGround = player->IsOnGround();
-  Collision *verticalCollision = collisionManager->CheckVerticalCollision(playerBounds);
-
-  if (verticalCollision)
   {
-    Rectangle objBounds = verticalCollision->GetBoundBox();
-    float playerBottom = playerBounds.y + playerBounds.height;
-    float objTop = objBounds.y;
+    player->SetPosition(minX, player->GetY());
+  }
+  else if (player->GetX() > maxX)
+  {
+    player->SetPosition(maxX, player->GetY());
+  }
 
-    // Check if player is falling and landing on platform
-    if (player->GetYVelocity() >= 0 && playerBottom >= objTop && playerBottom <= objTop + 15.0f)
+  // Update bounds after position changes
+  playerBounds = player->GetBoundBox();
+
+  // === GROUND LEVEL LOGIC (Key for run-and-gun games) ===
+  float groundLevel = 600.0f; // Your ground Y level
+  float playerBottom = playerBounds.y + playerBounds.height;
+
+  // Check if player should land on an obstacle
+  Collision *landingCollision = collisionManager->CheckVerticalCollision(playerBounds);
+
+  if (landingCollision && player->GetYVelocity() >= 0)
+  {
+    // Landing on obstacle
+    Rectangle objBounds = landingCollision->GetBoundBox();
+    player->SetPosition(player->GetX(), objBounds.y - player->GetHeight());
+    player->SetYVelocity(0.0f);
+    player->SetOnGround(true);
+  }
+  else if (playerBottom >= groundLevel)
+  {
+    // Landing on ground level
+    player->SetPosition(player->GetX(), groundLevel - player->GetHeight());
+    player->SetYVelocity(0.0f);
+    player->SetOnGround(true);
+  }
+  else if (player->GetYVelocity() >= 0)
+  {
+    // Player is falling and not on ground
+    player->SetOnGround(false);
+  }
+
+  // === SIMPLE GROUND CHECK ===
+  // If player is close to ground level and falling, snap to ground
+  if (!player->IsOnGround() && player->GetYVelocity() >= 0)
+  {
+    float distanceToGround = playerBottom - groundLevel;
+    if (distanceToGround >= -5.0f && distanceToGround <= 10.0f)
     {
-      // Snap player to platform surface
-      player->SetPosition(player->GetX(), objBounds.y - playerBounds.height);
+      player->SetPosition(player->GetX(), groundLevel - player->GetHeight());
       player->SetYVelocity(0.0f);
       player->SetOnGround(true);
-    }
-  }
-  else
-  {
-    // Check if player fell off a platform
-    if (wasOnGround && player->GetYVelocity() >= 0)
-    {
-      player->SetOnGround(false);
     }
   }
 
@@ -339,32 +366,25 @@ void Controller::UpdatePlaying()
   float playerX = player->GetX();
   float playerCenterX = playerX + player->GetWidth() / 2.0f;
 
-  // Metal Slug style: Camera follows player with specific rules
   float targetCameraX = camera.target.x;
 
-  // Create zones based on screen thirds
-  float leftZone = camera.target.x - halfScreenWidth * 0.6f;  // Left 40% of screen
-  float rightZone = camera.target.x + halfScreenWidth * 0.2f; // Right 20% of screen
-
-  // CLASSIC METAL SLUG BEHAVIOR:
-  // - Camera starts moving when player reaches 20% from right edge
-  // - Camera stops when player reaches 40% from left edge
-  // - This creates the classic "push the camera forward" feel
+  // Create zones for camera movement
+  float leftZone = camera.target.x - halfScreenWidth * 0.6f;
+  float rightZone = camera.target.x + halfScreenWidth * 0.2f;
 
   if (playerCenterX > rightZone)
   {
-    // Player is too far right, move camera forward
+    // Player moving right, push camera forward
     targetCameraX = playerCenterX - halfScreenWidth * 0.2f;
   }
   else if (playerCenterX < leftZone)
   {
-    // Player is too far left, move camera backward (but slowly)
+    // Player moving left, pull camera back
     targetCameraX = playerCenterX + halfScreenWidth * 0.6f;
   }
-  // If player is in the middle zone, camera stays put
 
-  // Smooth camera movement (Metal Slug has instant movement, but smooth feels better)
-  float cameraSpeed = 0.1f; // Adjust this for camera responsiveness
+  // Smooth camera movement
+  float cameraSpeed = 0.1f;
   camera.target.x += (targetCameraX - camera.target.x) * cameraSpeed;
 
   // Clamp camera to level bounds
@@ -380,18 +400,17 @@ void Controller::UpdatePlaying()
     camera.target.x = cameraMaxX;
   }
 
-  // Lock Y-axis like Metal Slug (fixed camera height)
-  camera.target.y = 350.0f; // Adjust this to show the right vertical area
+  // Fixed camera height for run-and-gun
+  camera.target.y = 350.0f;
 
-  // ✅ Camera delta for parallax update
+  // Camera delta for parallax
   static float lastCameraX = camera.target.x;
   float cameraDelta = camera.target.x - lastCameraX;
 
-  // Handle parallax when camera is at boundaries
+  // Handle parallax at boundaries
   if (fabs(cameraDelta) < 0.01f)
   {
     float playerDelta = player->GetX() - previousX;
-    // Only use player delta if camera is at the boundaries
     if ((camera.target.x <= cameraMinX && playerDelta < 0) ||
         (camera.target.x >= cameraMaxX && playerDelta > 0))
     {
@@ -401,7 +420,7 @@ void Controller::UpdatePlaying()
 
   lastCameraX = camera.target.x;
 
-  // Update layers with delta
+  // Update layers
   for (auto &layer : mainlayers)
   {
     if (layer)
