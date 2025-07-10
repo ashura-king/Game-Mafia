@@ -1,5 +1,7 @@
 #include "Bots/Character.hpp"
 #include "Bots/GunFire.hpp"
+#include "Platform/Collision.hpp"
+#include "Platform/CollisionManager.hpp"
 #include <raylib.h>
 #include <algorithm>
 
@@ -345,6 +347,15 @@ void Character::UpdateJumpAnimation()
   {
     jumpVelocity += gravity;
     y += jumpVelocity;
+
+    // Landing condition
+    if (y >= groundY - height)
+    {
+      y = groundY - height;
+      isJumping = false;
+      isOnGround = true;
+      jumpVelocity = 0.0f;
+    }
   }
 }
 

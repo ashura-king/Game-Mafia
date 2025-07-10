@@ -36,7 +36,7 @@ void CollisionManager::Update(float cameraX)
 {
   for (auto &obj : objects)
   {
-    obj->Update(cameraX); // Use -> for unique_ptr
+    obj->Update(cameraX);
   }
 }
 

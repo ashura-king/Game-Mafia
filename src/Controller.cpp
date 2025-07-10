@@ -45,13 +45,13 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
     titlePosition = {(screenWidth - (titleTexture.width * titleScale)) / 2.0f, 20.0f * scale};
   }
 
-  float groundY = 270.0f;
+  float groundY = 600.0f;
 
   collisionManager = new CollisionManager(groundY);
   collisionManager->CreateTestLevel();
 
-  float characterHeight = 128.0f * 2;               // your character's height
-  float spawnY = groundY - 32.0f - characterHeight; // standing on top of platform
+  float characterHeight = 128.0f * 2;
+  float spawnY = groundY - 32.0f - characterHeight;
 
   player = new Character("resource/player/Idle.png",
                          "resource/player/Idle_2.png",
@@ -68,7 +68,8 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   {
     player->SetJumpSpeed(15.0f);
     player->SetGravity(0.8f);
-    player->SetGroundY(270.0f);
+    // FIX: Set groundY to the actual ground level, not camera Y
+    player->SetGroundY(groundY); // Use 600.0f instead of 270.0f
     player->SetFireCooldown(0.3f);
     player->SetGunshotVolume(0.7f);
   }
@@ -100,7 +101,28 @@ void Controller::Init(int screenW, int screenH, int originalW, int originalH)
   camera.target = {player->GetX() + player->GetWidth() / 2.0f, player->GetY() + player->GetHeight() / 2.0f};
   camera.rotation = 0.0f;
   camera.zoom = 1.0f;
+
+  // Initialize levelWidth properly
+  levelWidth = 0.0f;
+  for (auto &layer : mainlayers)
+  {
+    if (layer)
+    {
+      float layerWidth = layer->GetTextureWidth() * scale;
+      if (layerWidth > levelWidth)
+      {
+        levelWidth = layerWidth;
+      }
+    }
+  }
+
+  // Set minimum level width if no layers loaded
+  if (levelWidth <= 0.0f)
+  {
+    levelWidth = screenWidth * 3.0f; // Default to 3 screen widths
+  }
 }
+
 void Controller::AddGamelayer(const std::string &file)
 {
   if (FileExists(file.c_str()))
@@ -230,7 +252,6 @@ void Controller::UpdateGame()
     }
   }
 }
-
 void Controller::UpdatePlaying()
 {
   float previousX = player->GetX();
@@ -253,14 +274,36 @@ void Controller::UpdatePlaying()
       player->SetPosition(objBounds.x + objBounds.width, player->GetY());
   }
 
+  // Clamp player within level bounds
+  float minX = 0.0f;
+  float maxX = levelWidth - player->GetWidth();
+  if (player->GetX() < minX)
+    player->SetPosition(minX, player->GetY());
+  else if (player->GetX() > maxX)
+    player->SetPosition(maxX, player->GetY());
+
+  // Vertical collision
   // Vertical collision
   Collision *verticalCollision = collisionManager->CheckVerticalCollision(playerBounds);
-  if (verticalCollision && player->IsFalling())
+  if (verticalCollision)
   {
     Rectangle objBounds = verticalCollision->GetBoundBox();
-    player->SetPosition(player->GetX(), objBounds.y - playerBounds.height);
-    player->SetYVelocity(0.0f);
-    player->SetOnGround(true);
+
+    // Check if player is landing on top of the platform
+    float playerBottom = playerBounds.y + playerBounds.height;
+    float objTop = objBounds.y;
+
+    // If player is on top of the platform (not falling through it)
+    if (playerBottom >= objTop - 5 && playerBottom <= objTop + 10)
+    {
+      player->SetPosition(player->GetX(), objBounds.y - playerBounds.height);
+      player->SetYVelocity(0.0f);
+      player->SetOnGround(true);
+    }
+    else
+    {
+      player->SetOnGround(false);
+    }
   }
   else
   {
@@ -271,30 +314,68 @@ void Controller::UpdatePlaying()
   collisionManager->Update(camera.target.x);
 
   // ==== 📷 CAMERA: METAL SLUG STYLE FOLLOW ====
-  float halfScreenWidth = GetScreenWidth() / 2.0f;
+  float halfScreenWidth = screenWidth / 2.0f;
   Vector2 playerCenter = {
       player->GetX() + player->GetWidth() / 2.0f,
       player->GetY() + player->GetHeight() / 2.0f};
 
-  // Smooth follow horizontally
-  camera.target.x += (playerCenter.x - camera.target.x) * 0.3f;
+  // Metal Slug style: Camera follows player but with some lag
+  float followSpeed = 0.05f; // Slower follow for Metal Slug feel
+  float targetCameraX = playerCenter.x;
 
-  // Clamp camera inside level bounds
-  if (camera.target.x < halfScreenWidth)
-    camera.target.x = halfScreenWidth;
-  if (camera.target.x > levelWidth - halfScreenWidth)
-    camera.target.x = levelWidth - halfScreenWidth;
+  // Create a "dead zone" in the center where camera doesn't move
+  float deadZoneWidth = screenWidth * 0.3f; // 30% of screen width
+  float cameraLeftBound = camera.target.x - deadZoneWidth / 2.0f;
+  float cameraRightBound = camera.target.x + deadZoneWidth / 2.0f;
 
-  // Lock Y-axis like Metal Slug
-  camera.target.y = 270.0f;
+  // Only move camera if player is outside the dead zone
+  if (playerCenter.x < cameraLeftBound)
+  {
+    targetCameraX = playerCenter.x + deadZoneWidth / 2.0f;
+  }
+  else if (playerCenter.x > cameraRightBound)
+  {
+    targetCameraX = playerCenter.x - deadZoneWidth / 2.0f;
+  }
+  else
+  {
+    targetCameraX = camera.target.x; // Stay in place
+  }
+
+  // Smooth camera movement
+  camera.target.x += (targetCameraX - camera.target.x) * followSpeed;
+
+  // Clamp camera to level bounds
+  float cameraMinX = halfScreenWidth;
+  float cameraMaxX = levelWidth - halfScreenWidth;
+
+  if (camera.target.x < cameraMinX)
+  {
+    camera.target.x = cameraMinX;
+  }
+  if (camera.target.x > cameraMaxX)
+  {
+    camera.target.x = cameraMaxX;
+  }
+
+  // Lock Y-axis like Metal Slug (keep camera at fixed height)
+  camera.target.y = 350.0f; // Adjust this value to show the right vertical area
 
   // ✅ Camera delta for parallax update
   static float lastCameraX = camera.target.x;
   float cameraDelta = camera.target.x - lastCameraX;
 
-  // If clamped, use player's movement delta to keep parallax alive
+  // If camera is clamped, use player's movement for parallax
   if (fabs(cameraDelta) < 0.01f)
-    cameraDelta = player->GetX() - previousX;
+  {
+    float playerDelta = player->GetX() - previousX;
+    // Only use player delta if camera is at the boundaries
+    if ((camera.target.x <= cameraMinX && playerDelta < 0) ||
+        (camera.target.x >= cameraMaxX && playerDelta > 0))
+    {
+      cameraDelta = playerDelta;
+    }
+  }
 
   lastCameraX = camera.target.x;
 
@@ -302,7 +383,9 @@ void Controller::UpdatePlaying()
   for (auto &layer : mainlayers)
   {
     if (layer)
+    {
       layer->UpdateLayer(cameraDelta);
+    }
   }
 }
 
